@@ -19,11 +19,11 @@ There is no automated test suite (no PHPUnit, no `tests/` directory). Verify cha
 
 ### Packaging a release
 
-`.github/workflows/release.yml` builds a distributable zip via `git archive` and attaches it to a GitHub Release when a `vX.Y.Z` tag is pushed. To build one locally:
+`.github/workflows/release.yml` builds a distributable zip named `feedland-rivers-X.Y.Z.zip` (version from the pushed tag) via `git archive`, attaches it to the GitHub Release, and sets a release body note pointing at that asset — because GitHub also auto-attaches its own unrelated "Source code (zip/tar.gz)" archives to every release, and those contain the raw repo checkout (wrong root folder name, dev-only files included) rather than the installable plugin package. To build the zip locally:
 
 ```bash
 git archive --format=zip --prefix=feedland-rivers/ HEAD \
-  -o feedland-rivers.zip \
+  -o feedland-rivers-X.Y.Z.zip \
   -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github' ':!CLAUDE.md'
 ```
 

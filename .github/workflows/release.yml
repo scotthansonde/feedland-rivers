@@ -13,13 +13,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Determine version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
       - name: Build plugin zip
         run: |
           git archive --format=zip --prefix=feedland-rivers/ HEAD \
-            -o feedland-rivers.zip \
+            -o "feedland-rivers-${VERSION}.zip" \
             -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github' ':!CLAUDE.md'
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          files: feedland-rivers.zip
+          files: feedland-rivers-${{ env.VERSION }}.zip
+          body: |
+            Download `feedland-rivers-${{ env.VERSION }}.zip` below — this is the installable plugin package.
+
+            The "Source code (zip)" and "Source code (tar.gz)" links further down are GitHub's raw repo checkout, not the plugin package: wrong root folder name, and includes dev-only files (composer.json, CLAUDE.md, etc.) that don't belong in a WordPress install and will produce spurious Plugin Check errors.
