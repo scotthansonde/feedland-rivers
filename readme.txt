@@ -19,7 +19,8 @@ Add the river anywhere with the `[feedland-rivers]` shortcode.
 = What it talks to =
 
 * Your configured FeedLand server, server-side only, for the river JSON and feed titles.
-* DuckDuckGo's icon service, from the visitor's browser, for each feed's favicon. This is the only third-party request, and it can be turned off:
+* Your configured Template URL, if you set one, server-side only — fetched once and cached, to build the page shell. Leave it blank to use the plugin's built-in template instead.
+* DuckDuckGo's icon service, from the visitor's browser, for each feed's favicon. This is the only third-party request made on every page view, and it can be turned off:
 
 `add_filter( 'feedland_rivers_favicon_url', '__return_empty_string' );`
 
