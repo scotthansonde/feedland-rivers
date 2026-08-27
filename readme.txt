@@ -4,7 +4,7 @@ Tags: feedland, rss, river, news, feeds
 Requires at least: 6.1
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.1
+Stable tag: 0.2.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,6 +54,10 @@ Yes. Point the Template URL setting at your own HTML template, which is fetched 
 Check that the username is correct at **Settings > FeedLand Rivers**, and that the account is subscribed to at least one feed — FeedLand only polls feeds that have active subscribers.
 
 == Changelog ==
+
+= 0.2.2 =
+* The release zip no longer includes the developer-only CLAUDE.md file.
+* Fixed unprefixed global variables in uninstall.php flagged by the Plugin Check tool.
 
 = 0.2.1 =
 * Fixed a bug that let a feed's own pre-escaped sample markup (e.g. a tutorial post showing `<img>` as literal text) survive as a live tag inside the river's sandboxed iframe, bypassing the description sanitizer.
