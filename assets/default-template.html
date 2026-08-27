@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<!--
+  No external stylesheets, fonts or scripts: everything this document needs
+  is either inline or served from this site, so no visitor's browser
+  contacts a third party just to view a river (hotlinked Google Fonts has
+  been held to breach the GDPR in German courts), and nothing breaks if
+  some other site's CDN goes down.
+
+  Footer icons are inlined as SVG by feedland_rivers_icons(): Font Awesome
+  Free 5 (https://fontawesome.com), icons licensed CC BY 4.0. The Ubuntu
+  webfont is served from this plugin's own assets/fonts/ via
+  [%fontFaceCss%]; Ubuntu is licensed under the Ubuntu Font Licence 1.0.
+-->
+[%fontFaceCss%]
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Ubuntu, sans-serif; font-size: 16px; line-height: 140%; color: #333; background: #f5f5f5; padding: 12px 16px; }
+/* Colour the fade over clamped item text; must match the body background. */
+:root { --river-fade: #f5f5f5; }
+a { color: #1E68A6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.divProductTitle { font-family: Ubuntu, sans-serif; font-weight: 700; font-size: 22px; }
+.divProductTitle:not(:empty) { margin-bottom: 4px; }
+.divProductTagline { color: #767676; }
+.divProductTagline:not(:empty) { margin-bottom: 16px; }
+
+.river-section { margin-bottom: 32px; }
+.river-section:first-child { margin-top: 0; }
+
+.river-section-header { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 12px; }
+.river-section-header::before { content: ""; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #bbb; z-index: 0; }
+.river-section-name { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; font-weight: 400; background: #f5f5f5; padding-right: 10px; }
+.river-section-favicon { border-radius: 2px; }
+.river-section-date { position: relative; z-index: 1; white-space: nowrap; color: #333; background: #f5f5f5; padding-left: 10px; }
+
+.river-item { margin-bottom: 18px; }
+.river-item:last-child { margin-bottom: 0; }
+.river-item-title { font-family: Ubuntu, sans-serif; font-weight: 700; font-size: 18px; line-height: 125%; margin-bottom: 4px; }
+.river-item-body { margin-bottom: 4px; }
+.river-item-body p { margin: 0 0 10px; }
+.river-item-body p:last-child { margin-bottom: 0; }
+.river-item-body-clamped { max-height: 200px; overflow: hidden; }
+.river-item-footer { display: flex; align-items: center; gap: 15px; font-size: 13px; color: #767676; margin-top: 4px; }
+.river-item-footer a { color: inherit; }
+.river-icon { vertical-align: -0.125em; }
+.river-icon-disabled { opacity: 0.6; cursor: default; }
+.river-item-when { margin-left: auto; white-space: nowrap; }
+.river-item-body:empty, .river-item-footer:empty, .river-section-date:empty { display: none; }
+
+.river-empty { color: #888; }
+</style>
+</head>
+<body>
+<div class="divProductHeader">[%pageImage%]<div class="divProductTitle">[%pageTitle%]</div><div class="divProductTagline">[%pageDescription%]</div></div>
+<div class="divRiverContent" id="idRiverContent"></div>
+</body>
+</html>

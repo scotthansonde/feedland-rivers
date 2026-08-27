@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<ruleset name="FeedLand Rivers">
+	<description>WordPress Coding Standards for the FeedLand Rivers plugin.</description>
+
+	<file>.</file>
+	<exclude-pattern>/vendor/</exclude-pattern>
+	<exclude-pattern>/node_modules/</exclude-pattern>
+	<exclude-pattern>/languages/</exclude-pattern>
+	<exclude-pattern>/assets/fonts/</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="sp"/>
+
+	<rule ref="WordPress"/>
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array" value="feedland-rivers"/>
+		</properties>
+	</rule>
+
+	<!-- The plugin declares Requires PHP 7.4. -->
+	<config name="testVersion" value="7.4-"/>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array" value="feedland_rivers,FEEDLAND_RIVERS"/>
+		</properties>
+	</rule>
+
+	<config name="minimum_wp_version" value="6.1"/>
+</ruleset>

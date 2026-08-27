@@ -1,0 +1,207 @@
+# Copyright (C) 2026 Scott Hanson
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: FeedLand Rivers 0.2.1\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/feedland-rivers\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-08-27T08:29:05+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: feedland-rivers\n"
+
+#. Plugin Name of the plugin
+#: feedland-rivers.php
+#: includes/settings.php:15
+msgid "FeedLand Rivers"
+msgstr ""
+
+#. Description of the plugin
+#: feedland-rivers.php
+msgid "Show a FeedLand river on your site."
+msgstr ""
+
+#. Author of the plugin
+#: feedland-rivers.php
+msgid "Scott Hanson"
+msgstr ""
+
+#: feedland-rivers.php:109
+msgid "Unable to load the river right now."
+msgstr ""
+
+#: feedland-rivers.php:152
+msgid "FeedLand river"
+msgstr ""
+
+#: feedland-rivers.php:207
+msgid "Settings"
+msgstr ""
+
+#: feedland-rivers.php:237
+msgid "the built-in template"
+msgstr ""
+
+#. translators: %s: the configured template URL.
+#: feedland-rivers.php:239
+#, php-format
+msgid "the template at %s"
+msgstr ""
+
+#: feedland-rivers.php:243
+msgid "FeedLand Rivers:"
+msgstr ""
+
+#. translators: %1$s: description of which template, %2$s: the required id attribute.
+#: feedland-rivers.php:247
+#, php-format
+msgid "No mount point was found in %1$s, so the river was appended to the end of the page instead of where the template expects it. Add an element with %2$s to the template."
+msgstr ""
+
+#: includes/render.php:615
+msgid "Sharing isn't available here."
+msgstr ""
+
+#: includes/render.php:616
+msgid "View this item on its own page."
+msgstr ""
+
+#: includes/render.php:616
+msgid "No link available for this item."
+msgstr ""
+
+#: includes/render.php:617
+msgid "Technical data view isn't available here."
+msgstr ""
+
+#: includes/render.php:618
+msgid "Listen to or view the enclosure."
+msgstr ""
+
+#: includes/render.php:618
+msgid "No enclosure attached to this item."
+msgstr ""
+
+#. translators: %s: time, e.g. "3:33 pm"
+#: includes/render.php:652
+#, php-format
+msgid "Today, %s"
+msgstr ""
+
+#: includes/render.php:881
+#: includes/render.php:885
+msgid "Show more"
+msgstr ""
+
+#: includes/render.php:885
+msgid "Show less"
+msgstr ""
+
+#: includes/render.php:931
+msgid "No news items to show yet."
+msgstr ""
+
+#: includes/settings.php:14
+#: includes/settings.php:58
+msgid "FeedLand Rivers Settings"
+msgstr ""
+
+#: includes/settings.php:65
+msgid "Title"
+msgstr ""
+
+#: includes/settings.php:74
+msgid "The heading shown above the river. Leave blank for no heading."
+msgstr ""
+
+#: includes/settings.php:82
+msgid "FeedLand username"
+msgstr ""
+
+#: includes/settings.php:91
+msgid "The username of the FeedLand account whose river you want shown. (Required)"
+msgstr ""
+
+#: includes/settings.php:97
+msgid "FeedLand server"
+msgstr ""
+
+#: includes/settings.php:107
+msgid "The server that account is on. (Defaults to feedland.com, required)"
+msgstr ""
+
+#: includes/settings.php:113
+msgid "Category (optional)"
+msgstr ""
+
+#: includes/settings.php:122
+msgid "Show news only from feeds in this category. Leave blank to show news from everything the user subscribes to."
+msgstr ""
+
+#: includes/settings.php:128
+msgid "Description (optional)"
+msgstr ""
+
+#: includes/settings.php:137
+msgid "Used if your template shows a description (the built-in template does not)."
+msgstr ""
+
+#: includes/settings.php:143
+msgid "Image URL (optional)"
+msgstr ""
+
+#: includes/settings.php:152
+msgid "Used if your template shows an image (the built-in template does not)."
+msgstr ""
+
+#: includes/settings.php:158
+msgid "Template URL (optional)"
+msgstr ""
+
+#: includes/settings.php:167
+msgid "The HTML template used for the river page, fetched and filled in the same way FeedLand fills in its own News Product templates. Leave blank to use the built-in template."
+msgstr ""
+
+#: includes/settings.php:178
+msgid "Customize the FeedLand Rivers settings."
+msgstr ""
+
+#: includes/settings.php:306
+msgid "The FeedLand server URL is not valid — it must be an http:// or https:// address."
+msgstr ""
+
+#: includes/settings.php:321
+msgid "The username cannot be empty."
+msgstr ""
+
+#: includes/settings.php:350
+msgid "Could not reach the FeedLand server to verify the username, so it was saved as entered."
+msgstr ""
+
+#: includes/settings.php:360
+msgid "The FeedLand server did not return a usable response when verifying the username, so it was saved as entered."
+msgstr ""
+
+#: includes/settings.php:367
+msgid "The username provided is not associated with a FeedLand account."
+msgstr ""
+
+#: includes/settings.php:395
+msgid "Could not reach the FeedLand server to verify the category, so it was saved as entered."
+msgstr ""
+
+#: includes/settings.php:406
+msgid "That category was not found for this user."
+msgstr ""
+
+#: includes/settings.php:421
+msgid "The image URL is not valid — it must be an http:// or https:// address."
+msgstr ""
+
+#: includes/settings.php:422
+msgid "The template URL is not valid — it must be an http:// or https:// address."
+msgstr ""
