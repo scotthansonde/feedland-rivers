@@ -24,10 +24,12 @@ There is no automated test suite (no PHPUnit, no `tests/` directory). Verify cha
 ```bash
 git archive --format=zip --prefix=feedland-rivers/ HEAD \
   -o feedland-rivers.zip \
-  -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github'
+  -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github' ':!CLAUDE.md'
 ```
 
 The plugin header `Version:` (`feedland-rivers.php`) and `Stable tag:` (`readme.txt`) must be bumped together — nothing enforces this automatically.
+
+When checking a release with the WordPress Plugin Check plugin, download the `feedland-rivers.zip` release *asset* specifically. GitHub also auto-attaches a "Source code (zip)" archive to every release, containing the entire unfiltered repo (`.git`-tracked dotfiles, `CLAUDE.md`, composer files, everything) under a version-suffixed folder name (`feedland-rivers-0.2.1/` rather than `feedland-rivers/`) — checking that one instead produces a wall of spurious `TextDomainMismatch` errors (it infers the expected text domain from the folder name) plus `hidden_files`/`application_detected`/`github_directory` warnings for files the real release zip never ships.
 
 ### Manual verification
 

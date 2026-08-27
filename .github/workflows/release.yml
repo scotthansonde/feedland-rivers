@@ -17,7 +17,7 @@ jobs:
         run: |
           git archive --format=zip --prefix=feedland-rivers/ HEAD \
             -o feedland-rivers.zip \
-            -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github'
+            -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github' ':!CLAUDE.md'
 
       - name: Create release
         uses: softprops/action-gh-release@v2
