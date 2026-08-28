@@ -68,6 +68,32 @@ function feedland_rivers_render_srcdoc( string $server, string $username, string
 }
 
 /**
+ * The nonce action for a resolved server/username/category triple, shared by
+ * the shortcode (which creates a token for the poll script to send back) and
+ * the REST poll endpoint (which verifies it before doing anything else).
+ *
+ * The REST route is public and, per its own docs, deliberately accepts
+ * server/username/category from the client -- but only a value this plugin
+ * itself already rendered into a page should be able to produce a valid
+ * token for that exact triple, since wp_create_nonce()/wp_verify_nonce() are
+ * an HMAC over the site's secret salts. An anonymous caller inventing a
+ * server/username/category combination nothing on the site ever rendered
+ * cannot forge a token for it, which is what actually closes off "hit the
+ * endpoint directly with arbitrary params" -- the plain server/username/
+ * category matching the shortcode's own validation logic (resolve_atts()
+ * above) was never itself a barrier to that.
+ *
+ * @param string $server   FeedLand server base URL, trailing slash included.
+ * @param string $username FeedLand screenname.
+ * @param string $category Optional category name.
+ *
+ * @return string
+ */
+function feedland_rivers_river_nonce_action( string $server, string $username, string $category ): string {
+	return 'feedland_rivers_river_' . $server . '|' . $username . '|' . $category;
+}
+
+/**
  * Fetches the river JSON for a username/category from FeedLand, cached in a
  * transient so we're not hitting FeedLand on every page view.
  *
@@ -121,7 +147,14 @@ function feedland_rivers_get_river( string $server, string $username, string $ca
 		);
 	}
 
-	$request = wp_remote_get( $endpoint, array( 'timeout' => 8 ) );
+	// wp_safe_remote_get(), not wp_remote_get(): $server reaches here from the
+	// anonymous-accessible REST poll endpoint (includes/rest.php) as well as
+	// the shortcode, so it's no longer only ever a value a trusted content
+	// author configured. wp_safe_remote_get() runs wp_http_validate_url(),
+	// which rejects a $server that resolves to a loopback/private/link-local/
+	// cloud-metadata address (filterable via http_request_host_is_external if
+	// a site genuinely needs to point this at an internal FeedLand instance).
+	$request = wp_safe_remote_get( $endpoint, array( 'timeout' => 8 ) );
 
 	if ( is_wp_error( $request ) || 200 !== wp_remote_retrieve_response_code( $request ) ) {
 		feedland_rivers_cache_river_error( $cache_key );
@@ -197,7 +230,10 @@ function feedland_rivers_get_feed_info( string $server, string $feed_url ): arra
 		return $cached;
 	}
 
-	$request = wp_remote_get(
+	// wp_safe_remote_get() here too -- see the matching comment in
+	// feedland_rivers_get_river(). $server is the same client-reachable value
+	// in both places.
+	$request = wp_safe_remote_get(
 		add_query_arg( array( 'url' => $feed_url ), $server . 'getfeed' ),
 		array( 'timeout' => 5 )
 	);

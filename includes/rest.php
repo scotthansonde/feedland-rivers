@@ -17,12 +17,15 @@ add_action( 'rest_api_init', 'feedland_rivers_register_rest_routes' );
  * Registers the public, read-only endpoint the parent page's poll script
  * (feedland_rivers_poll_listener_script()) calls to check for and fetch
  * fresh river content. Deliberately open to anonymous requests, same as the
- * river itself already is via the shortcode -- and, since server/username/
- * category are accepted from the client exactly like the shortcode's own
- * attributes, this makes the same outbound-FeedLand-fetch capability a page
- * author already has (via [feedland-rivers server="..."]) reachable by any
- * visitor rather than only whoever can edit page content. That's an accepted
- * tradeoff for matching every shortcode variant, not an oversight.
+ * river itself already is via the shortcode -- but unlike the shortcode,
+ * server/username/category arrive here as plain request params anyone could
+ * set to anything, so feedland_rivers_rest_get_river() additionally requires
+ * a token proving this exact triple was actually rendered by this site (see
+ * feedland_rivers_river_nonce_action()) before it does anything with them.
+ * That's what keeps this matching every shortcode variant (the point of
+ * accepting server/username/category from the client at all) without also
+ * becoming an open "fetch any URL this site's server can reach" endpoint for
+ * combinations nothing on the site ever rendered.
  *
  * @return void
  */
@@ -44,6 +47,10 @@ function feedland_rivers_register_rest_routes(): void {
 					'default' => '',
 				),
 				'category' => array(
+					'type'    => 'string',
+					'default' => '',
+				),
+				'token'    => array(
 					'type'    => 'string',
 					'default' => '',
 				),
@@ -76,6 +83,20 @@ function feedland_rivers_rest_get_river( WP_REST_Request $request ) {
 		),
 		$options
 	);
+
+	// Checked against the *resolved* triple, matching exactly what
+	// feedland_rivers_shortcode() created a token for at render time -- an
+	// unresolved override that happens to resolve to the same values as
+	// another already-rendered river gets the same token, which is fine,
+	// it's still a combination this site actually shows. Checked before any
+	// fetch happens, not just before the response is built.
+	if ( ! wp_verify_nonce( (string) $request->get_param( 'token' ), feedland_rivers_river_nonce_action( $resolved['server'], $resolved['username'], $resolved['category'] ) ) ) {
+		return new WP_Error(
+			'feedland_rivers_invalid_token',
+			__( 'This river was not rendered by this site.', 'feedland-rivers' ),
+			array( 'status' => 403 )
+		);
+	}
 
 	$srcdoc = feedland_rivers_render_srcdoc( $resolved['server'], $resolved['username'], $resolved['category'], $options );
 

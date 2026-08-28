@@ -119,10 +119,13 @@ function feedland_rivers_shortcode( $atts ): string {
 	// iframe inside the wrapper is the one currently shown/polled -- the poll
 	// script briefly holds a second, hidden iframe alongside it while
 	// preloading fresh content (see feedland_rivers_poll_listener_script()),
-	// and needs an unambiguous way to tell them apart.
+	// and needs an unambiguous way to tell them apart. data-feedland-token is
+	// the poll endpoint's authorization for this exact triple -- see
+	// feedland_rivers_river_nonce_action().
 	$poll_attrs = '';
 	if ( feedland_rivers_poll_interval() > 0 ) {
-		$poll_attrs = ' data-feedland-server="' . esc_attr( $server ) . '" data-feedland-username="' . esc_attr( $username ) . '" data-feedland-category="' . esc_attr( $category ) . '" data-feedland-hash="' . esc_attr( md5( $srcdoc ) ) . '" data-feedland-live="1"';
+		$poll_token = wp_create_nonce( feedland_rivers_river_nonce_action( $server, $username, $category ) );
+		$poll_attrs = ' data-feedland-server="' . esc_attr( $server ) . '" data-feedland-username="' . esc_attr( $username ) . '" data-feedland-category="' . esc_attr( $category ) . '" data-feedland-token="' . esc_attr( $poll_token ) . '" data-feedland-hash="' . esc_attr( md5( $srcdoc ) ) . '" data-feedland-live="1"';
 	}
 
 	// allow-popups (+ allow-popups-to-escape-sandbox, so the opened tab
@@ -288,6 +291,7 @@ function feedland_rivers_poll_listener_script(): string {
 		. 'next.dataset.feedlandServer=cur.dataset.feedlandServer||"";'
 		. 'next.dataset.feedlandUsername=cur.dataset.feedlandUsername||"";'
 		. 'next.dataset.feedlandCategory=cur.dataset.feedlandCategory||"";'
+		. 'next.dataset.feedlandToken=cur.dataset.feedlandToken||"";'
 		. 'next.dataset.feedlandHash=json.hash;'
 		. 'next.srcdoc=json.srcdoc;'
 		. 'var settled=false;'
@@ -314,6 +318,7 @@ function feedland_rivers_poll_listener_script(): string {
 		. 'p.set("server",f.dataset.feedlandServer||"");'
 		. 'p.set("username",f.dataset.feedlandUsername||"");'
 		. 'p.set("category",f.dataset.feedlandCategory||"");'
+		. 'p.set("token",f.dataset.feedlandToken||"");'
 		. 'var ctrl=("AbortController" in window)?new AbortController():null;'
 		. 'var t=ctrl?setTimeout(function(){ctrl.abort();},8000):null;'
 		. 'fetch(restUrl+sep+p.toString(),ctrl?{signal:ctrl.signal}:{}).then(function(r){if(t)clearTimeout(t);return r.ok?r.json():null;}).then(function(json){'
