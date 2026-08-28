@@ -33,9 +33,15 @@ define( 'FEEDLAND_RIVERS_DEFAULT_DESCRIPTION', '' );
 define( 'FEEDLAND_RIVERS_DEFAULT_IMAGE', '' );
 define( 'FEEDLAND_RIVERS_DEFAULT_TEMPLATE_URL', '' );
 define( 'FEEDLAND_RIVERS_MAX_ITEMS', 20 );
-define( 'FEEDLAND_RIVERS_CACHE_TTL', 10 * MINUTE_IN_SECONDS );
+// Kept equal deliberately: polling meaningfully faster than the river cache
+// expires mostly just multiplies REST requests that land on cache hits
+// without improving worst-case freshness, since a poll can't see anything
+// newer than what's already in the transient. Worst-case time from FeedLand
+// having something new to an open tab showing it is roughly the sum of the
+// two -- around 6 minutes at these defaults.
+define( 'FEEDLAND_RIVERS_CACHE_TTL', 3 * MINUTE_IN_SECONDS );
 define( 'FEEDLAND_RIVERS_ERROR_CACHE_TTL', 2 * MINUTE_IN_SECONDS );
-define( 'FEEDLAND_RIVERS_POLL_INTERVAL', 5 * MINUTE_IN_SECONDS );
+define( 'FEEDLAND_RIVERS_POLL_INTERVAL', 3 * MINUTE_IN_SECONDS );
 
 require_once 'includes/settings.php';
 require_once 'includes/render.php';
