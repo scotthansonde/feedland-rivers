@@ -21,7 +21,7 @@ add_action( 'rest_api_init', 'feedland_rivers_register_rest_routes' );
  * server/username/category arrive here as plain request params anyone could
  * set to anything, so feedland_rivers_rest_get_river() additionally requires
  * a token proving this exact triple was actually rendered by this site (see
- * feedland_rivers_river_nonce_action()) before it does anything with them.
+ * feedland_rivers_river_token()) before it does anything with them.
  * That's what keeps this matching every shortcode variant (the point of
  * accepting server/username/category from the client at all) without also
  * becoming an open "fetch any URL this site's server can reach" endpoint for
@@ -89,8 +89,11 @@ function feedland_rivers_rest_get_river( WP_REST_Request $request ) {
 	// unresolved override that happens to resolve to the same values as
 	// another already-rendered river gets the same token, which is fine,
 	// it's still a combination this site actually shows. Checked before any
-	// fetch happens, not just before the response is built.
-	if ( ! wp_verify_nonce( (string) $request->get_param( 'token' ), feedland_rivers_river_nonce_action( $resolved['server'], $resolved['username'], $resolved['category'] ) ) ) {
+	// fetch happens, not just before the response is built. hash_equals(),
+	// not ===: this is a secret-derived token comparison, not incidental
+	// string equality, so it needs to run in constant time regardless of
+	// where the strings first differ.
+	if ( ! hash_equals( feedland_rivers_river_token( $resolved['server'], $resolved['username'], $resolved['category'] ), (string) $request->get_param( 'token' ) ) ) {
 		return new WP_Error(
 			'feedland_rivers_invalid_token',
 			__( 'This river was not rendered by this site.', 'feedland-rivers' ),

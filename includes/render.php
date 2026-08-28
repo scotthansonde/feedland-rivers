@@ -68,20 +68,33 @@ function feedland_rivers_render_srcdoc( string $server, string $username, string
 }
 
 /**
- * The nonce action for a resolved server/username/category triple, shared by
- * the shortcode (which creates a token for the poll script to send back) and
- * the REST poll endpoint (which verifies it before doing anything else).
+ * A token proving a resolved server/username/category triple was actually
+ * rendered by this site, shared by the shortcode (which creates one for the
+ * poll script to send back) and the REST poll endpoint (which verifies it
+ * before doing anything else).
  *
  * The REST route is public and, per its own docs, deliberately accepts
  * server/username/category from the client -- but only a value this plugin
  * itself already rendered into a page should be able to produce a valid
- * token for that exact triple, since wp_create_nonce()/wp_verify_nonce() are
- * an HMAC over the site's secret salts. An anonymous caller inventing a
- * server/username/category combination nothing on the site ever rendered
- * cannot forge a token for it, which is what actually closes off "hit the
- * endpoint directly with arbitrary params" -- the plain server/username/
+ * token for that exact triple, which is what actually closes off "hit the
+ * endpoint directly with arbitrary params": the plain server/username/
  * category matching the shortcode's own validation logic (resolve_atts()
  * above) was never itself a barrier to that.
+ *
+ * Deliberately wp_hash(), not wp_create_nonce()/wp_verify_nonce(): both are
+ * an HMAC over the site's secret salts, but a real nonce also mixes in the
+ * *current request's* user ID and session token, which is wrong for this
+ * value specifically. The river a given triple renders is identical for
+ * every visitor regardless of who's logged in, the token sits in HTML a page
+ * cache or CDN may serve unchanged to a mix of logged-in and anonymous
+ * visitors, and the token needs to keep validating when the poll script
+ * calls back minutes after the page loaded, from whatever session that
+ * browser tab happens to carry by then -- none of which is the same
+ * requester identity a nonce implicitly binds to. wp_hash() alone gives the
+ * same "only a combination this site actually rendered" guarantee without
+ * that binding, at the cost of the token not expiring on its own; an
+ * acceptable tradeoff here, since it grants a caller nothing beyond viewing
+ * the exact content the site already serves publicly at that combination.
  *
  * @param string $server   FeedLand server base URL, trailing slash included.
  * @param string $username FeedLand screenname.
@@ -89,8 +102,8 @@ function feedland_rivers_render_srcdoc( string $server, string $username, string
  *
  * @return string
  */
-function feedland_rivers_river_nonce_action( string $server, string $username, string $category ): string {
-	return 'feedland_rivers_river_' . $server . '|' . $username . '|' . $category;
+function feedland_rivers_river_token( string $server, string $username, string $category ): string {
+	return wp_hash( 'feedland_rivers_river|' . $server . '|' . $username . '|' . $category, 'nonce' );
 }
 
 /**

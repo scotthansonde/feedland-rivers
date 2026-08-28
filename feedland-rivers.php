@@ -121,10 +121,10 @@ function feedland_rivers_shortcode( $atts ): string {
 	// preloading fresh content (see feedland_rivers_poll_listener_script()),
 	// and needs an unambiguous way to tell them apart. data-feedland-token is
 	// the poll endpoint's authorization for this exact triple -- see
-	// feedland_rivers_river_nonce_action().
+	// feedland_rivers_river_token().
 	$poll_attrs = '';
 	if ( feedland_rivers_poll_interval() > 0 ) {
-		$poll_token = wp_create_nonce( feedland_rivers_river_nonce_action( $server, $username, $category ) );
+		$poll_token = feedland_rivers_river_token( $server, $username, $category );
 		$poll_attrs = ' data-feedland-server="' . esc_attr( $server ) . '" data-feedland-username="' . esc_attr( $username ) . '" data-feedland-category="' . esc_attr( $category ) . '" data-feedland-token="' . esc_attr( $poll_token ) . '" data-feedland-hash="' . esc_attr( md5( $srcdoc ) ) . '" data-feedland-live="1"';
 	}
 
