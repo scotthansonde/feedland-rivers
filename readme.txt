@@ -20,9 +20,14 @@ Add the river anywhere with the `[feedland-rivers]` shortcode.
 
 * Your configured FeedLand server, server-side only, for the river JSON and feed titles.
 * Your configured Template URL, if you set one, server-side only — fetched once and cached, to build the page shell. Leave it blank to use the plugin's built-in template instead.
-* DuckDuckGo's icon service, from the visitor's browser, for each feed's favicon. This is the only third-party request made on every page view, and it can be turned off:
+* DuckDuckGo's icon service, from the visitor's browser, for each feed's favicon. This can be turned off:
 
 `add_filter( 'feedland_rivers_favicon_url', '__return_empty_string' );`
+
+* Your configured FeedLand server's homepage, server-side only, once a day — reads its advertised WebSocket address so live updates (below) reach the right host even on a self-hosted instance whose socket runs on a different subdomain than its API. Falls back to guessing from the server's own host if this can't be read.
+* A FeedLand WebSocket address (usually, but not always, the same host as your configured server — see above), from the visitor's browser, while polling (below) is enabled — listens for FeedLand's live new-item/updated-item notifications so a poll can be triggered immediately instead of waiting for the next timed check. Nothing from this connection is ever rendered; it's only compared against the feed URLs already shown before deciding whether to poll early. Set `feedland_rivers_live_updates_enabled` to `__return_false` to turn this off and rely on timed polling alone:
+
+`add_filter( 'feedland_rivers_live_updates_enabled', '__return_false' );`
 
 * This site's own REST API (not a third party), from the visitor's browser, every few minutes — checks for fresh river content and updates it in place without a full page reload. Each request carries a token proving the specific river shown was actually configured on this site, generated when the page itself was rendered; requests for any other username/category/server are rejected. Set `feedland_rivers_poll_interval` to `0` to turn this off entirely and fall back to only refreshing on a full page reload.
 
@@ -31,6 +36,10 @@ Add the river anywhere with the `[feedland-rivers]` shortcode.
 * `feedland_rivers_max_items` — total item cap across all sections (default 20).
 * `feedland_rivers_cache_ttl` — how long a fetched river stays cached, in seconds (default 180).
 * `feedland_rivers_poll_interval` — how often the browser checks for fresh content and updates the river in place, in seconds (default 180, 0 disables). Kept equal to `feedland_rivers_cache_ttl` by default: polling faster than the river cache expires mostly just adds requests that land on cache hits, without showing anything sooner.
+* `feedland_rivers_feed_list_cache_ttl` — how long the subscribed-feeds list used to filter live updates stays cached, in seconds (default 1800).
+* `feedland_rivers_live_updates_enabled` — whether the browser opens a WebSocket connection to trigger an early poll on a live update (default true).
+* `feedland_rivers_live_updates_socket_url` — the WebSocket address to connect to for a given server, or override it if the server's own homepage doesn't advertise the right one.
+* `feedland_rivers_socket_discovery_cache_ttl` — how long a discovered WebSocket address stays cached, in seconds (default 86400).
 * `feedland_rivers_favicon_url` — the favicon URL for a feed, or '' for none.
 
 == Installation ==

@@ -111,10 +111,20 @@ function feedland_rivers_rest_get_river( WP_REST_Request $request ) {
 		);
 	}
 
+	// Refreshed on every poll, same as $srcdoc -- the client carries it onto
+	// the replacement iframe's dataset (see swap() in
+	// feedland_rivers_poll_listener_script()) so the WebSocket filter keeps
+	// watching the right feed set as it drifts. A failed fetch here doesn't
+	// fail the whole poll -- an empty list just means the WebSocket trigger
+	// sits idle until the next successful poll re-populates it; the interval
+	// poll itself is unaffected.
+	$feed_urls = feedland_rivers_get_category_feed_urls( $resolved['server'], $resolved['username'], $resolved['category'] );
+
 	$response = rest_ensure_response(
 		array(
-			'srcdoc' => $srcdoc,
-			'hash'   => md5( $srcdoc ),
+			'srcdoc'   => $srcdoc,
+			'hash'     => md5( $srcdoc ),
+			'feedUrls' => false === $feed_urls ? array() : $feed_urls,
 		)
 	);
 

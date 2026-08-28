@@ -88,13 +88,34 @@ template" above.
   `code`, `headphones`) — version 5 specifically, since 6 redrew `retweet`
   and `headphones` lighter. Font Awesome Free icons are licensed
   [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-- **Feed favicons** are the one remaining third-party request, fetched from
-  DuckDuckGo's icon service — they can't be bundled, since they belong to
-  whatever sites the river happens to link to. Filter them to your own proxy,
-  or off entirely:
+- **Feed favicons** are fetched from DuckDuckGo's icon service — they can't be
+  bundled, since they belong to whatever sites the river happens to link to.
+  Filter them to your own proxy, or off entirely:
 
 ```PHP
 add_filter( 'feedland_rivers_favicon_url', '__return_empty_string' );
+```
+
+- **Live updates**: while polling is enabled, the visitor's browser also opens
+  a WebSocket connection (see `feedland_rivers_live_updates_script()`),
+  listening for FeedLand's live new-item/updated-item notifications so a poll
+  can fire immediately instead of waiting for the next timed check. Nothing
+  from that connection is ever rendered — each notification is only compared,
+  as a plain string, against the feed URLs already shown, to decide whether to
+  poll early. That watched set comes from FeedLand's own OPML subscription
+  list (`feedland_rivers_get_category_feed_urls()`), not just the feeds
+  currently visible in the displayed window, so a quiet feed's next post still
+  triggers a refresh once it has one. The socket address usually matches the
+  configured server, but not always — a self-hosted instance can run its
+  socket on an entirely different host, so the server-side fetches that
+  host's own homepage once a day and reads its advertised address
+  (`feedland_rivers_discover_socket_url()`), falling back to a same-host guess
+  if that fails; both are overridable per-server with
+  `feedland_rivers_live_updates_socket_url`. Turn live updates off entirely to
+  fall back to timed polling alone:
+
+```PHP
+add_filter( 'feedland_rivers_live_updates_enabled', '__return_false' );
 ```
 
 ## Notes / known limitations
