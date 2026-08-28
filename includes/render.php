@@ -5,6 +5,69 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Resolves the server/username/category to use for a river, applying the
+ * same shortcode-attribute-overrides-option-fallback rule regardless of
+ * caller: the shortcode's own atts (guaranteed strings by shortcode_atts())
+ * and a REST request's params (which, without a declared string schema,
+ * could be null or an array) both pass through here, so each value is
+ * coerced defensively rather than trusted to already be a string.
+ *
+ * @param array $atts    {server?: mixed, username?: mixed, category?: mixed}.
+ * @param array $options The feedland_rivers_options array.
+ *
+ * @return array {server: string, username: string, category: string}.
+ */
+function feedland_rivers_resolve_atts( array $atts, array $options ): array {
+	$server = is_string( $atts['server'] ?? null ) ? trim( $atts['server'] ) : '';
+	$server = '' !== $server ? feedland_rivers_clean_url( $server ) : '';
+
+	if ( '' === $server ) {
+		$server = $options['feedland_rivers_server'] ?? FEEDLAND_RIVERS_DEFAULT_SERVER;
+	}
+
+	$server = trailingslashit( $server );
+
+	$username = is_string( $atts['username'] ?? null ) ? trim( $atts['username'] ) : '';
+	$username = '' !== $username ? sanitize_text_field( $username ) : trim( $options['feedland_rivers_username'] ?? '' );
+
+	$category = is_string( $atts['category'] ?? null ) ? trim( $atts['category'] ) : '';
+	$category = '' !== $category ? sanitize_text_field( $category ) : trim( $options['feedland_rivers_category'] ?? '' );
+
+	return array(
+		'server'   => $server,
+		'username' => $username,
+		'category' => $category,
+	);
+}
+
+/**
+ * Fetches and renders a river's full iframe srcdoc document for an already-
+ * resolved server/username/category, or false when there's no username to
+ * fetch with or the fetch itself failed. Shared by the shortcode and the
+ * REST poll endpoint so both render exactly the same way.
+ *
+ * @param string $server   FeedLand server base URL, trailing slash included.
+ * @param string $username FeedLand screenname.
+ * @param string $category Optional category name.
+ * @param array  $options  The feedland_rivers_options array.
+ *
+ * @return string|false
+ */
+function feedland_rivers_render_srcdoc( string $server, string $username, string $category, array $options ) {
+	if ( '' === $username ) {
+		return false;
+	}
+
+	$river = feedland_rivers_get_river( $server, $username, $category, feedland_rivers_max_items() );
+
+	if ( false === $river ) {
+		return false;
+	}
+
+	return feedland_rivers_render_iframe_document( $river, $server, $options );
+}
+
+/**
  * Fetches the river JSON for a username/category from FeedLand, cached in a
  * transient so we're not hitting FeedLand on every page view.
  *

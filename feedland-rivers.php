@@ -35,9 +35,11 @@ define( 'FEEDLAND_RIVERS_DEFAULT_TEMPLATE_URL', '' );
 define( 'FEEDLAND_RIVERS_MAX_ITEMS', 20 );
 define( 'FEEDLAND_RIVERS_CACHE_TTL', 10 * MINUTE_IN_SECONDS );
 define( 'FEEDLAND_RIVERS_ERROR_CACHE_TTL', 2 * MINUTE_IN_SECONDS );
+define( 'FEEDLAND_RIVERS_POLL_INTERVAL', 5 * MINUTE_IN_SECONDS );
 
 require_once 'includes/settings.php';
 require_once 'includes/render.php';
+require_once 'includes/rest.php';
 
 add_shortcode( 'feedland-rivers', 'feedland_rivers_shortcode' );
 add_action( 'admin_menu', 'feedland_rivers_add_admin_menu' );
@@ -84,35 +86,34 @@ function feedland_rivers_shortcode( $atts ): string {
 		'feedland-rivers'
 	);
 
-	$server = trim( $atts['server'] );
-	$server = '' !== $server ? feedland_rivers_clean_url( $server ) : '';
-
-	if ( '' === $server ) {
-		$server = $options['feedland_rivers_server'] ?? FEEDLAND_RIVERS_DEFAULT_SERVER;
-	}
-
-	$server = trailingslashit( $server );
-
-	$username = trim( $atts['username'] );
-	$username = '' !== $username ? sanitize_text_field( $username ) : trim( $options['feedland_rivers_username'] ?? '' );
-
-	$category = trim( $atts['category'] );
-	$category = '' !== $category ? sanitize_text_field( $category ) : trim( $options['feedland_rivers_category'] ?? '' );
+	$resolved = feedland_rivers_resolve_atts( $atts, $options );
+	$server   = $resolved['server'];
+	$username = $resolved['username'];
+	$category = $resolved['category'];
 
 	if ( '' === $username ) {
 		return '';
 	}
 
-	$river = feedland_rivers_get_river( $server, $username, $category, feedland_rivers_max_items() );
+	$srcdoc = feedland_rivers_render_srcdoc( $server, $username, $category, $options );
 
-	if ( false === $river ) {
+	if ( false === $srcdoc ) {
 		return '<p class="feedlandRiversError">' . esc_html__( 'Unable to load the river right now.', 'feedland-rivers' ) . '</p>';
 	}
 
-	$srcdoc    = feedland_rivers_render_iframe_document( $river, $server, $options );
 	$iframe_id = 'idFeedlandRivers' . wp_unique_id();
 
-	$listener = feedland_rivers_resize_listener_script();
+	$listener = feedland_rivers_resize_listener_script() . feedland_rivers_poll_listener_script();
+
+	// data-feedland-* carry already-validated plain scalars (a cleaned URL,
+	// sanitize_text_field()'d strings) resolved the same way the shortcode
+	// itself resolved them -- not feed-embedded content -- so ordinary
+	// single-pass esc_attr() is correct here. This is not the double-encoding
+	// situation $srcdoc_attr below handles.
+	$poll_attrs = '';
+	if ( feedland_rivers_poll_interval() > 0 ) {
+		$poll_attrs = ' data-feedland-server="' . esc_attr( $server ) . '" data-feedland-username="' . esc_attr( $username ) . '" data-feedland-category="' . esc_attr( $category ) . '" data-feedland-hash="' . esc_attr( md5( $srcdoc ) ) . '"';
+	}
 
 	// allow-popups (+ allow-popups-to-escape-sandbox, so the opened tab
 	// isn't itself sandboxed) is required for the item/doc/enclosure links'
@@ -149,7 +150,7 @@ function feedland_rivers_shortcode( $atts ): string {
 	// the offending fragment.
 	$srcdoc_attr = htmlspecialchars( wp_check_invalid_utf8( $srcdoc ), ENT_QUOTES, 'UTF-8', true );
 
-	return '<iframe id="' . esc_attr( $iframe_id ) . '" class="feedlandRiversIframe" title="' . esc_attr__( 'FeedLand river', 'feedland-rivers' ) . '" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" style="width:100%;height:600px;border:0;display:block;" srcdoc="' . $srcdoc_attr . '"></iframe>'
+	return '<iframe id="' . esc_attr( $iframe_id ) . '" class="feedlandRiversIframe" title="' . esc_attr__( 'FeedLand river', 'feedland-rivers' ) . '" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" style="width:100%;height:600px;border:0;display:block;" srcdoc="' . $srcdoc_attr . '"' . $poll_attrs . '></iframe>'
 		. $listener;
 }
 
@@ -169,6 +170,66 @@ function feedland_rivers_resize_listener_script(): string {
 	$printed = true;
 
 	return '<script>window.addEventListener("message",function(e){if(!e.data||typeof e.data.feedlandRiversHeight!=="number")return;document.querySelectorAll(".feedlandRiversIframe").forEach(function(f){if(f.contentWindow===e.source){f.style.height=e.data.feedlandRiversHeight+"px";}});});</script>';
+}
+
+/**
+ * Prints the parent-page poll loop that refreshes a river iframe's content
+ * in place, without a full page reload, when new items are available. Only
+ * printed once per page even if the shortcode is used multiple times, and
+ * only when feedland_rivers_poll_interval() is greater than zero.
+ *
+ * Re-queries the DOM every tick rather than caching a NodeList, so it picks
+ * up every .feedlandRiversIframe present at poll time regardless of how many
+ * shortcode instances (each with its own data-feedland-* params) are on the
+ * page. Assigning iframe.srcdoc is a direct DOM/IDL property assignment, not
+ * writing into HTML source, so it needs no htmlspecialchars() step -- that
+ * concern is specific to embedding $srcdoc as an attribute value in HTML
+ * markup (see the $srcdoc_attr comment in feedland_rivers_shortcode()), not
+ * to assigning a JS string to .srcdoc. Reassigning .srcdoc forces a real
+ * navigation of the iframe's browsing context, same as reassigning src, but
+ * iframe.contentWindow stays stable across it, so the resize listener above
+ * keeps matching the frame with no changes needed. That navigation does
+ * discard the inner document's scroll position, focus, and any expanded
+ * "Show more" state -- an accepted cost of a background content refresh at a
+ * multi-minute interval, not fixed here.
+ *
+ * @return string
+ */
+function feedland_rivers_poll_listener_script(): string {
+	static $printed = false;
+
+	if ( $printed ) {
+		return '';
+	}
+	$printed = true;
+
+	$interval_ms = feedland_rivers_poll_interval() * 1000;
+
+	if ( $interval_ms <= 0 ) {
+		return '';
+	}
+
+	$rest_url = esc_url_raw( rest_url( 'feedland-rivers/v1/river' ) );
+
+	return '<script>(function(){'
+		. 'var restUrl=' . wp_json_encode( $rest_url ) . ';'
+		. 'function poll(){'
+		. 'document.querySelectorAll(".feedlandRiversIframe[data-feedland-hash]").forEach(function(f){'
+		. 'var p=new URLSearchParams();'
+		. 'p.set("server",f.dataset.feedlandServer||"");'
+		. 'p.set("username",f.dataset.feedlandUsername||"");'
+		. 'p.set("category",f.dataset.feedlandCategory||"");'
+		. 'var ctrl=("AbortController" in window)?new AbortController():null;'
+		. 'var t=ctrl?setTimeout(function(){ctrl.abort();},8000):null;'
+		. 'fetch(restUrl+"?"+p.toString(),ctrl?{signal:ctrl.signal}:{}).then(function(r){if(t)clearTimeout(t);return r.ok?r.json():null;}).then(function(json){'
+		. 'if(!json||!json.hash||json.hash===f.dataset.feedlandHash||!f.isConnected)return;'
+		. 'f.srcdoc=json.srcdoc;'
+		. 'f.dataset.feedlandHash=json.hash;'
+		. '}).catch(function(){});'
+		. '});'
+		. '}'
+		. 'setInterval(poll,' . (int) $interval_ms . ');'
+		. '})();</script>';
 }
 
 /**
@@ -292,4 +353,20 @@ function feedland_rivers_cache_ttl(): int {
 	 * @param int $ttl Default FEEDLAND_RIVERS_CACHE_TTL, in seconds.
 	 */
 	return max( 0, (int) apply_filters( 'feedland_rivers_cache_ttl', FEEDLAND_RIVERS_CACHE_TTL ) );
+}
+
+/**
+ * How often (in seconds) the browser polls for fresh river content and swaps
+ * it into an already-rendered iframe in place. 0 disables polling entirely:
+ * no data-feedland-* attributes or poll script are printed.
+ *
+ * @return int Seconds.
+ */
+function feedland_rivers_poll_interval(): int {
+	/**
+	 * Filters the river poll interval.
+	 *
+	 * @param int $interval Default FEEDLAND_RIVERS_POLL_INTERVAL, in seconds. 0 disables polling.
+	 */
+	return max( 0, (int) apply_filters( 'feedland_rivers_poll_interval', FEEDLAND_RIVERS_POLL_INTERVAL ) );
 }
