@@ -5,6 +5,108 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Resolves the server/username/category to use for a river, applying the
+ * same shortcode-attribute-overrides-option-fallback rule regardless of
+ * caller: the shortcode's own atts (guaranteed strings by shortcode_atts())
+ * and a REST request's params (which, without a declared string schema,
+ * could be null or an array) both pass through here, so each value is
+ * coerced defensively rather than trusted to already be a string.
+ *
+ * @param array $atts    {server?: mixed, username?: mixed, category?: mixed}.
+ * @param array $options The feedland_rivers_options array.
+ *
+ * @return array {server: string, username: string, category: string}.
+ */
+function feedland_rivers_resolve_atts( array $atts, array $options ): array {
+	$server = is_string( $atts['server'] ?? null ) ? trim( $atts['server'] ) : '';
+	$server = '' !== $server ? feedland_rivers_clean_url( $server ) : '';
+
+	if ( '' === $server ) {
+		$server = $options['feedland_rivers_server'] ?? FEEDLAND_RIVERS_DEFAULT_SERVER;
+	}
+
+	$server = trailingslashit( $server );
+
+	$username = is_string( $atts['username'] ?? null ) ? trim( $atts['username'] ) : '';
+	$username = '' !== $username ? sanitize_text_field( $username ) : trim( $options['feedland_rivers_username'] ?? '' );
+
+	$category = is_string( $atts['category'] ?? null ) ? trim( $atts['category'] ) : '';
+	$category = '' !== $category ? sanitize_text_field( $category ) : trim( $options['feedland_rivers_category'] ?? '' );
+
+	return array(
+		'server'   => $server,
+		'username' => $username,
+		'category' => $category,
+	);
+}
+
+/**
+ * Fetches and renders a river's full iframe srcdoc document for an already-
+ * resolved server/username/category, or false when there's no username to
+ * fetch with or the fetch itself failed. Shared by the shortcode and the
+ * REST poll endpoint so both render exactly the same way.
+ *
+ * @param string $server   FeedLand server base URL, trailing slash included.
+ * @param string $username FeedLand screenname.
+ * @param string $category Optional category name.
+ * @param array  $options  The feedland_rivers_options array.
+ *
+ * @return string|false
+ */
+function feedland_rivers_render_srcdoc( string $server, string $username, string $category, array $options ) {
+	if ( '' === $username ) {
+		return false;
+	}
+
+	$river = feedland_rivers_get_river( $server, $username, $category, feedland_rivers_max_items() );
+
+	if ( false === $river ) {
+		return false;
+	}
+
+	return feedland_rivers_render_iframe_document( $river, $server, $options );
+}
+
+/**
+ * A token proving a resolved server/username/category triple was actually
+ * rendered by this site, shared by the shortcode (which creates one for the
+ * poll script to send back) and the REST poll endpoint (which verifies it
+ * before doing anything else).
+ *
+ * The REST route is public and, per its own docs, deliberately accepts
+ * server/username/category from the client -- but only a value this plugin
+ * itself already rendered into a page should be able to produce a valid
+ * token for that exact triple, which is what actually closes off "hit the
+ * endpoint directly with arbitrary params": the plain server/username/
+ * category matching the shortcode's own validation logic (resolve_atts()
+ * above) was never itself a barrier to that.
+ *
+ * Deliberately wp_hash(), not wp_create_nonce()/wp_verify_nonce(): both are
+ * an HMAC over the site's secret salts, but a real nonce also mixes in the
+ * *current request's* user ID and session token, which is wrong for this
+ * value specifically. The river a given triple renders is identical for
+ * every visitor regardless of who's logged in, the token sits in HTML a page
+ * cache or CDN may serve unchanged to a mix of logged-in and anonymous
+ * visitors, and the token needs to keep validating when the poll script
+ * calls back minutes after the page loaded, from whatever session that
+ * browser tab happens to carry by then -- none of which is the same
+ * requester identity a nonce implicitly binds to. wp_hash() alone gives the
+ * same "only a combination this site actually rendered" guarantee without
+ * that binding, at the cost of the token not expiring on its own; an
+ * acceptable tradeoff here, since it grants a caller nothing beyond viewing
+ * the exact content the site already serves publicly at that combination.
+ *
+ * @param string $server   FeedLand server base URL, trailing slash included.
+ * @param string $username FeedLand screenname.
+ * @param string $category Optional category name.
+ *
+ * @return string
+ */
+function feedland_rivers_river_token( string $server, string $username, string $category ): string {
+	return wp_hash( 'feedland_rivers_river|' . $server . '|' . $username . '|' . $category, 'nonce' );
+}
+
+/**
  * Fetches the river JSON for a username/category from FeedLand, cached in a
  * transient so we're not hitting FeedLand on every page view.
  *
@@ -58,7 +160,14 @@ function feedland_rivers_get_river( string $server, string $username, string $ca
 		);
 	}
 
-	$request = wp_remote_get( $endpoint, array( 'timeout' => 8 ) );
+	// wp_safe_remote_get(), not wp_remote_get(): $server reaches here from the
+	// anonymous-accessible REST poll endpoint (includes/rest.php) as well as
+	// the shortcode, so it's no longer only ever a value a trusted content
+	// author configured. wp_safe_remote_get() runs wp_http_validate_url(),
+	// which rejects a $server that resolves to a loopback/private/link-local/
+	// cloud-metadata address (filterable via http_request_host_is_external if
+	// a site genuinely needs to point this at an internal FeedLand instance).
+	$request = wp_safe_remote_get( $endpoint, array( 'timeout' => 8 ) );
 
 	if ( is_wp_error( $request ) || 200 !== wp_remote_retrieve_response_code( $request ) ) {
 		feedland_rivers_cache_river_error( $cache_key );
@@ -134,7 +243,10 @@ function feedland_rivers_get_feed_info( string $server, string $feed_url ): arra
 		return $cached;
 	}
 
-	$request = wp_remote_get(
+	// wp_safe_remote_get() here too -- see the matching comment in
+	// feedland_rivers_get_river(). $server is the same client-reachable value
+	// in both places.
+	$request = wp_safe_remote_get(
 		add_query_arg( array( 'url' => $feed_url ), $server . 'getfeed' ),
 		array( 'timeout' => 5 )
 	);

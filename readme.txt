@@ -24,10 +24,13 @@ Add the river anywhere with the `[feedland-rivers]` shortcode.
 
 `add_filter( 'feedland_rivers_favicon_url', '__return_empty_string' );`
 
+* This site's own REST API (not a third party), from the visitor's browser, every few minutes — checks for fresh river content and updates it in place without a full page reload. Each request carries a token proving the specific river shown was actually configured on this site, generated when the page itself was rendered; requests for any other username/category/server are rejected. Set `feedland_rivers_poll_interval` to `0` to turn this off entirely and fall back to only refreshing on a full page reload.
+
 = Filters =
 
 * `feedland_rivers_max_items` — total item cap across all sections (default 20).
-* `feedland_rivers_cache_ttl` — how long a fetched river stays cached, in seconds (default 600).
+* `feedland_rivers_cache_ttl` — how long a fetched river stays cached, in seconds (default 180).
+* `feedland_rivers_poll_interval` — how often the browser checks for fresh content and updates the river in place, in seconds (default 180, 0 disables). Kept equal to `feedland_rivers_cache_ttl` by default: polling faster than the river cache expires mostly just adds requests that land on cache hits, without showing anything sooner.
 * `feedland_rivers_favicon_url` — the favicon URL for a feed, or '' for none.
 
 == Installation ==
