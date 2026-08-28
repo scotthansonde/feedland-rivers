@@ -4,7 +4,7 @@ Tags: feedland, rss, river, news, feeds
 Requires at least: 6.1
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.2
+Stable tag: 0.3.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,11 @@ Yes. Point the Template URL setting at your own HTML template, which is fetched 
 Check that the username is correct at **Settings > FeedLand Rivers**, and that the account is subscribed to at least one feed — FeedLand only polls feeds that have active subscribers.
 
 == Changelog ==
+
+= 0.3.0 =
+* The river now checks for fresh content every few minutes and updates itself in place, so a page left open picks up new items without a full reload. Updates fade in rather than causing the flash a full document swap would otherwise show. Disable with `add_filter( 'feedland_rivers_poll_interval', '__return_zero' );`.
+* Added the `feedland_rivers_poll_interval` filter; the default river cache lifetime is now 3 minutes (previously 10), matched to the new poll interval so the two don't drift apart.
+* The polling requests are same-origin, not third-party, and are cryptographically scoped to only the rivers this site actually renders — see "What it talks to" above. Outbound FeedLand requests can no longer be pointed at an internal/private address.
 
 = 0.2.2 =
 * The release zip no longer includes the developer-only CLAUDE.md file.
