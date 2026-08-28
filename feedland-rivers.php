@@ -213,6 +213,13 @@ function feedland_rivers_poll_listener_script(): string {
 
 	return '<script>(function(){'
 		. 'var restUrl=' . wp_json_encode( $rest_url ) . ';'
+		// rest_url() returns a path like /wp-json/feedland-rivers/v1/river with
+		// pretty permalinks on, but /index.php?rest_route=/feedland-rivers/v1/river
+		// -- already carrying a "?" -- with them off (the default on a fresh
+		// install). Blindly appending another "?" would get swallowed into the
+		// rest_route value instead of starting a real query string, so
+		// server/username/category would never reach the REST callback.
+		. 'var sep=restUrl.indexOf("?")===-1?"?":"&";'
 		. 'function poll(){'
 		. 'document.querySelectorAll(".feedlandRiversIframe[data-feedland-hash]").forEach(function(f){'
 		. 'var p=new URLSearchParams();'
@@ -221,7 +228,7 @@ function feedland_rivers_poll_listener_script(): string {
 		. 'p.set("category",f.dataset.feedlandCategory||"");'
 		. 'var ctrl=("AbortController" in window)?new AbortController():null;'
 		. 'var t=ctrl?setTimeout(function(){ctrl.abort();},8000):null;'
-		. 'fetch(restUrl+"?"+p.toString(),ctrl?{signal:ctrl.signal}:{}).then(function(r){if(t)clearTimeout(t);return r.ok?r.json():null;}).then(function(json){'
+		. 'fetch(restUrl+sep+p.toString(),ctrl?{signal:ctrl.signal}:{}).then(function(r){if(t)clearTimeout(t);return r.ok?r.json():null;}).then(function(json){'
 		. 'if(!json||!json.hash||json.hash===f.dataset.feedlandHash||!f.isConnected)return;'
 		. 'f.srcdoc=json.srcdoc;'
 		. 'f.dataset.feedlandHash=json.hash;'
