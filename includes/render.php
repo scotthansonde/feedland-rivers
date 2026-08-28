@@ -606,18 +606,28 @@ function feedland_rivers_render_footer_icon( string $class, string $icon, string
  * block -- seen on real feed content: a Bulwark item whose description was
  * several distinct <p> paragraphs).
  *
- * FeedLand's own river rendering applies no sanitization to this text at
- * all: getDescriptionText() (riverviewer.js) returns feedItem.description
+ * FeedLand's own river *rendering* applies no sanitization to this text:
+ * getDescriptionText() (riverviewer.js) returns feedItem.description
  * unmodified, and setBodytext() inserts it via jQuery's .append(), which
- * parses and renders it as raw HTML -- confirmed by reading the source,
- * and by removeScriptTags()/neuterMarkup() (misc.js) never being called
- * anywhere in that path. Whatever protection exists is server-side and
- * invisible from here. This plugin has a different trust boundary --
- * third-party feed content embedded on someone else's WordPress site --
- * so rather than adopt that raw passthrough, this uses wp_kses() with an
- * intentionally small allowlist: paragraphs/line breaks plus basic inline
- * emphasis and links. `target`/`rel` are deliberately not in the allowed
- * attribute list (so a feed can't set target="_blank" without rel=
+ * parses and renders it as raw HTML -- confirmed by reading the source, and
+ * by removeScriptTags()/neuterMarkup() (misc.js) never being called anywhere
+ * in that path. That's safe on FeedLand's own end because it sanitizes
+ * earlier, at feed-ingestion time: getItemDescription()/stripMarkup()
+ * (database/database.js in FeedLand's own source) run every incoming item's
+ * description through sanitize-html with an allowlist of exactly `p`/`br`
+ * -- no attributes, no links -- before it's ever written to FeedLand's
+ * database, and the getriver/getriverfromcategory API this plugin calls
+ * serves that already-sanitized stored value back out unchanged. This
+ * plugin sanitizes independently anyway rather than trusting that: it's a
+ * property of one particular upstream deployment's ingestion pipeline, not
+ * something a WordPress site embedding feed content from *whichever*
+ * FeedLand server happens to be configured -- including a self-hosted one
+ * -- can assume holds. wp_kses() runs here with its own intentionally
+ * small allowlist: paragraphs/line breaks plus basic inline emphasis and
+ * links -- broader than FeedLand's own p/br-only allowlist specifically
+ * because this plugin also renders links, which raises a concern FeedLand's
+ * allowlist never has to: `target`/`rel` are deliberately not in the
+ * allowed attribute list (so a feed can't set target="_blank" without rel=
  * "noopener", inviting reverse tabnabbing); they're forced consistently
  * on every allowed link afterward instead, matching how every other link
  * this plugin renders is already handled.
