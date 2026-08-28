@@ -4,7 +4,7 @@ Tags: feedland, rss, river, news, feeds
 Requires at least: 6.1
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,9 +20,14 @@ Add the river anywhere with the `[feedland-rivers]` shortcode.
 
 * Your configured FeedLand server, server-side only, for the river JSON and feed titles.
 * Your configured Template URL, if you set one, server-side only — fetched once and cached, to build the page shell. Leave it blank to use the plugin's built-in template instead.
-* DuckDuckGo's icon service, from the visitor's browser, for each feed's favicon. This is the only third-party request made on every page view, and it can be turned off:
+* DuckDuckGo's icon service, from the visitor's browser, for each feed's favicon. This can be turned off:
 
 `add_filter( 'feedland_rivers_favicon_url', '__return_empty_string' );`
+
+* Your configured FeedLand server's homepage, server-side only, once a day — reads its advertised WebSocket address so live updates (below) reach the right host even on a self-hosted instance whose socket runs on a different subdomain than its API. Falls back to guessing from the server's own host if this can't be read.
+* A FeedLand WebSocket address (usually, but not always, the same host as your configured server — see above), from the visitor's browser, while polling (below) is enabled — listens for FeedLand's live new-item/updated-item notifications so a poll can be triggered immediately instead of waiting for the next timed check. Nothing from this connection is ever rendered; it's only compared against the feed URLs already shown before deciding whether to poll early. Set `feedland_rivers_live_updates_enabled` to `__return_false` to turn this off and rely on timed polling alone:
+
+`add_filter( 'feedland_rivers_live_updates_enabled', '__return_false' );`
 
 * This site's own REST API (not a third party), from the visitor's browser, every few minutes — checks for fresh river content and updates it in place without a full page reload. Each request carries a token proving the specific river shown was actually configured on this site, generated when the page itself was rendered; requests for any other username/category/server are rejected. Set `feedland_rivers_poll_interval` to `0` to turn this off entirely and fall back to only refreshing on a full page reload.
 
@@ -31,6 +36,10 @@ Add the river anywhere with the `[feedland-rivers]` shortcode.
 * `feedland_rivers_max_items` — total item cap across all sections (default 20).
 * `feedland_rivers_cache_ttl` — how long a fetched river stays cached, in seconds (default 180).
 * `feedland_rivers_poll_interval` — how often the browser checks for fresh content and updates the river in place, in seconds (default 180, 0 disables). Kept equal to `feedland_rivers_cache_ttl` by default: polling faster than the river cache expires mostly just adds requests that land on cache hits, without showing anything sooner.
+* `feedland_rivers_feed_list_cache_ttl` — how long the subscribed-feeds list used to filter live updates stays cached, in seconds (default 1800).
+* `feedland_rivers_live_updates_enabled` — whether the browser opens a WebSocket connection to trigger an early poll on a live update (default true).
+* `feedland_rivers_live_updates_socket_url` — the WebSocket address to connect to for a given server, or override it if the server's own homepage doesn't advertise the right one.
+* `feedland_rivers_socket_discovery_cache_ttl` — how long a discovered WebSocket address stays cached, in seconds (default 86400).
 * `feedland_rivers_favicon_url` — the favicon URL for a feed, or '' for none.
 
 == Installation ==
@@ -58,6 +67,12 @@ Yes. Point the Template URL setting at your own HTML template, which is fetched 
 Check that the username is correct at **Settings > FeedLand Rivers**, and that the account is subscribed to at least one feed — FeedLand only polls feeds that have active subscribers.
 
 == Changelog ==
+
+= 0.4.0 =
+* The river now also listens for FeedLand's live-update notifications over a WebSocket connection and polls immediately when a subscribed feed changes, instead of always waiting for the next timed check. Disable with `add_filter( 'feedland_rivers_live_updates_enabled', '__return_false' );`.
+* The watched feed set comes from FeedLand's own OPML subscription list, not just the feeds currently visible in the displayed window, so a quiet feed's next post still triggers a refresh.
+* The WebSocket address is discovered from the configured server's own homepage once a day, since a self-hosted instance can run it on a completely different host than its REST API; falls back to a same-host guess if that fails.
+* Added the `feedland_rivers_feed_list_cache_ttl`, `feedland_rivers_feed_list_error_cache_ttl`, `feedland_rivers_live_updates_enabled`, `feedland_rivers_live_updates_socket_url`, `feedland_rivers_socket_discovery_cache_ttl` and `feedland_rivers_socket_discovery_error_cache_ttl` filters.
 
 = 0.3.0 =
 * The river now checks for fresh content every few minutes and updates itself in place, so a page left open picks up new items without a full reload. Updates fade in rather than causing the flash a full document swap would otherwise show. Disable with `add_filter( 'feedland_rivers_poll_interval', '__return_zero' );`.

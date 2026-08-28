@@ -203,6 +203,158 @@ function feedland_rivers_get_river( string $server, string $username, string $ca
 }
 
 /**
+ * Fetches the set of feed URLs a username (optionally scoped to a category)
+ * subscribes to on FeedLand, via its OPML subscription-list endpoint.
+ *
+ * Deliberately separate from feedland_rivers_get_river(): that returns only
+ * the feeds represented in the currently-cached top $max_items window, which
+ * is too narrow for the WebSocket live-update filter in
+ * feedland_rivers_poll_listener_script() -- a feed that hasn't posted
+ * recently enough to be in that window still needs to be watched, so a new
+ * item from it can trigger an immediate poll instead of only ever matching
+ * feeds already on screen.
+ *
+ * Omitting catname (confirmed against feedland.com) returns everything the
+ * user subscribes to, the same "blank means everything" convention
+ * getriver/getriverfromcategory already use.
+ *
+ * Cached far longer than the river itself
+ * (FEEDLAND_RIVERS_FEED_LIST_CACHE_TTL vs. FEEDLAND_RIVERS_CACHE_TTL): a
+ * subscription list changes far less often than which items are newest, so
+ * there's no freshness reason to refetch it every few minutes.
+ *
+ * @param string $server   FeedLand server base URL, trailing slash included.
+ * @param string $username FeedLand screenname.
+ * @param string $category Optional category name.
+ *
+ * @return string[]|false List of feed URLs, or false if the list could not be fetched.
+ */
+function feedland_rivers_get_category_feed_urls( string $server, string $username, string $category ) {
+	if ( '' === $username ) {
+		return false;
+	}
+
+	$cache_key = 'feedland_rivers_feeds_' . md5( $server . '|' . $username . '|' . $category );
+	$cached    = get_transient( $cache_key );
+
+	if ( is_array( $cached ) && isset( $cached['feedlandRiversError'] ) ) {
+		return false; // Negative cache hit -- don't re-hit a server we just failed against.
+	}
+
+	if ( false !== $cached ) {
+		return $cached;
+	}
+
+	$query = array( 'screenname' => $username );
+	if ( '' !== $category ) {
+		$query['catname'] = $category;
+	}
+
+	// wp_safe_remote_get(), not wp_remote_get() -- see the matching comment in
+	// feedland_rivers_get_river(). $server reaches here from the same two
+	// callers (the shortcode and the anonymous-accessible REST poll endpoint).
+	$request = wp_safe_remote_get( add_query_arg( $query, $server . 'opml' ), array( 'timeout' => 8 ) );
+
+	if ( is_wp_error( $request ) || 200 !== wp_remote_retrieve_response_code( $request ) ) {
+		set_transient( $cache_key, array( 'feedlandRiversError' => true ), feedland_rivers_feed_list_error_cache_ttl() );
+		return false;
+	}
+
+	// libxml_use_internal_errors() just keeps a malformed response from
+	// emitting a PHP warning on a public page -- simplexml_load_string()
+	// already returns false on failure regardless. The parsed xmlUrl values
+	// are only ever compared as plain strings against WebSocket feedUrl
+	// fields, never output, so there's no separate sanitization boundary to
+	// enforce here the way there is for feed item content.
+	$previous_setting = libxml_use_internal_errors( true );
+	$xml              = simplexml_load_string( wp_remote_retrieve_body( $request ) );
+	libxml_use_internal_errors( $previous_setting );
+
+	if ( false === $xml ) {
+		set_transient( $cache_key, array( 'feedlandRiversError' => true ), feedland_rivers_feed_list_error_cache_ttl() );
+		return false;
+	}
+
+	$outlines = $xml->xpath( '//outline[@xmlUrl]' );
+
+	// trim() -- confirmed against a real account's OPML response, at least one
+	// xmlUrl value comes back with stray leading whitespace. Matching against
+	// a WebSocket feedUrl is exact string comparison (see
+	// feedland_rivers_live_updates_script()'s handleSocketMessage()), so an
+	// untrimmed value here would silently and permanently exclude that feed
+	// from ever matching.
+	$feed_urls = array();
+	foreach ( is_array( $outlines ) ? $outlines : array() as $outline ) {
+		$feed_url = trim( (string) $outline['xmlUrl'] );
+		if ( '' !== $feed_url ) {
+			$feed_urls[] = $feed_url;
+		}
+	}
+	$feed_urls = array_values( array_unique( $feed_urls ) );
+
+	set_transient( $cache_key, $feed_urls, feedland_rivers_feed_list_cache_ttl() );
+
+	return $feed_urls;
+}
+
+/**
+ * Discovers a FeedLand server's own advertised WebSocket URL by fetching its
+ * homepage and reading the urlSocketServer value out of its inline
+ * `var appConsts = {...}` config block -- the same value FeedLand's own
+ * front-end connects to. Confirmed present, under that exact key, on both
+ * feedland.com and a self-hosted instance whose socket runs on a completely
+ * different host from its REST API -- i.e. this is how a self-hosted
+ * instance's actual socket host gets found automatically, without requiring
+ * every such site to configure the feedland_rivers_live_updates_socket_url
+ * filter by hand.
+ *
+ * See feedland_rivers_live_updates_socket_url(), which actually falls back
+ * when this returns false -- to a guessed convention, and after that to the
+ * filter -- so a homepage that doesn't expose this (a redesigned template, a
+ * server that's down) degrades to a reasonable guess rather than leaving
+ * live updates entirely unresolved.
+ *
+ * @param string $server FeedLand server base URL, trailing slash included.
+ *
+ * @return string|false The discovered socket URL, or false if it couldn't be found.
+ */
+function feedland_rivers_discover_socket_url( string $server ) {
+	$cache_key = 'feedland_rivers_socket_' . md5( $server );
+	$cached    = get_transient( $cache_key );
+
+	if ( is_array( $cached ) && isset( $cached['feedlandRiversError'] ) ) {
+		return false; // Negative cache hit -- don't re-hit a server we just failed against.
+	}
+
+	if ( false !== $cached ) {
+		return $cached;
+	}
+
+	// wp_safe_remote_get() -- see the matching comment in
+	// feedland_rivers_get_river(). $server reaches here the same way.
+	$request = wp_safe_remote_get( $server, array( 'timeout' => 5 ) );
+
+	if ( is_wp_error( $request ) || 200 !== wp_remote_retrieve_response_code( $request ) ) {
+		set_transient( $cache_key, array( 'feedlandRiversError' => true ), feedland_rivers_socket_discovery_error_cache_ttl() );
+		return false;
+	}
+
+	// Double quotes only, matching the two confirmed real examples
+	// (`urlSocketServer: "wss://...",`) -- deliberately narrow, since a wrong
+	// match here would be cached as fact for a day; missing an unusual
+	// quoting/formatting style just falls back to the guessed convention
+	// instead, which is a much smaller cost than a bad cached match.
+	if ( ! preg_match( '/urlSocketServer\s*:\s*"(wss?:\/\/[^"]+)"/', wp_remote_retrieve_body( $request ), $matches ) ) {
+		set_transient( $cache_key, array( 'feedlandRiversError' => true ), feedland_rivers_socket_discovery_error_cache_ttl() );
+		return false;
+	}
+
+	set_transient( $cache_key, $matches[1], feedland_rivers_socket_discovery_cache_ttl() );
+
+	return $matches[1];
+}
+
+/**
  * Records a short-lived "this fetch failed" marker for a river cache key.
  *
  * A sentinel array rather than a literal false, since get_transient()
