@@ -109,10 +109,14 @@ function feedland_rivers_shortcode( $atts ): string {
 	// sanitize_text_field()'d strings) resolved the same way the shortcode
 	// itself resolved them -- not feed-embedded content -- so ordinary
 	// single-pass esc_attr() is correct here. This is not the double-encoding
-	// situation $srcdoc_attr below handles.
+	// situation $srcdoc_attr below handles. data-feedland-live marks which
+	// iframe inside the wrapper is the one currently shown/polled -- the poll
+	// script briefly holds a second, hidden iframe alongside it while
+	// preloading fresh content (see feedland_rivers_poll_listener_script()),
+	// and needs an unambiguous way to tell them apart.
 	$poll_attrs = '';
 	if ( feedland_rivers_poll_interval() > 0 ) {
-		$poll_attrs = ' data-feedland-server="' . esc_attr( $server ) . '" data-feedland-username="' . esc_attr( $username ) . '" data-feedland-category="' . esc_attr( $category ) . '" data-feedland-hash="' . esc_attr( md5( $srcdoc ) ) . '"';
+		$poll_attrs = ' data-feedland-server="' . esc_attr( $server ) . '" data-feedland-username="' . esc_attr( $username ) . '" data-feedland-category="' . esc_attr( $category ) . '" data-feedland-hash="' . esc_attr( md5( $srcdoc ) ) . '" data-feedland-live="1"';
 	}
 
 	// allow-popups (+ allow-popups-to-escape-sandbox, so the opened tab
@@ -150,7 +154,14 @@ function feedland_rivers_shortcode( $atts ): string {
 	// the offending fragment.
 	$srcdoc_attr = htmlspecialchars( wp_check_invalid_utf8( $srcdoc ), ENT_QUOTES, 'UTF-8', true );
 
-	return '<iframe id="' . esc_attr( $iframe_id ) . '" class="feedlandRiversIframe" title="' . esc_attr__( 'FeedLand river', 'feedland-rivers' ) . '" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" style="width:100%;height:600px;border:0;display:block;" srcdoc="' . $srcdoc_attr . '"' . $poll_attrs . '></iframe>'
+	// The wrapper is a positioning context only: the poll script's hidden
+	// preload iframe is absolutely positioned within it while loading, so it
+	// overlaps the visible one instead of pushing page content around, and a
+	// plain position:relative div with no other styling has no visual effect
+	// of its own -- it doesn't change layout when polling is disabled either.
+	return '<div class="feedlandRiversWrap" style="position:relative;">'
+		. '<iframe id="' . esc_attr( $iframe_id ) . '" class="feedlandRiversIframe" title="' . esc_attr__( 'FeedLand river', 'feedland-rivers' ) . '" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" style="width:100%;height:600px;border:0;display:block;" srcdoc="' . $srcdoc_attr . '"' . $poll_attrs . '></iframe>'
+		. '</div>'
 		. $listener;
 }
 
@@ -179,19 +190,36 @@ function feedland_rivers_resize_listener_script(): string {
  * only when feedland_rivers_poll_interval() is greater than zero.
  *
  * Re-queries the DOM every tick rather than caching a NodeList, so it picks
- * up every .feedlandRiversIframe present at poll time regardless of how many
+ * up every .feedlandRiversWrap present at poll time regardless of how many
  * shortcode instances (each with its own data-feedland-* params) are on the
- * page. Assigning iframe.srcdoc is a direct DOM/IDL property assignment, not
- * writing into HTML source, so it needs no htmlspecialchars() step -- that
- * concern is specific to embedding $srcdoc as an attribute value in HTML
- * markup (see the $srcdoc_attr comment in feedland_rivers_shortcode()), not
- * to assigning a JS string to .srcdoc. Reassigning .srcdoc forces a real
- * navigation of the iframe's browsing context, same as reassigning src, but
- * iframe.contentWindow stays stable across it, so the resize listener above
- * keeps matching the frame with no changes needed. That navigation does
- * discard the inner document's scroll position, focus, and any expanded
- * "Show more" state -- an accepted cost of a background content refresh at a
- * multi-minute interval, not fixed here.
+ * page.
+ *
+ * Swapping content is double-buffered rather than reassigning the visible
+ * iframe's .srcdoc directly, to avoid the flash a live document replacement
+ * causes: reassigning .srcdoc forces a real navigation of that browsing
+ * context, so the visible frame would go blank and repaint progressively
+ * while the new document loads. Instead, fresh content loads into a second,
+ * hidden iframe (absolutely positioned over the first, opacity 0, inside the
+ * shortcode's position:relative wrapper) that isn't shown until it reports
+ * its own real height via the same postMessage the resize listener above
+ * already listens for -- i.e. until it has actually finished rendering, not
+ * merely started loading. Only then do the two cross-fade and the old iframe
+ * get removed. A 4-second fallback timeout promotes the new iframe anyway if
+ * that message never arrives (scripts blocked, a CSP dropping the resize
+ * listener, etc.), so a broken poll can't leave the page stuck displaying
+ * nothing.
+ *
+ * The old and new iframes are never both in normal document flow at once:
+ * the new one stays position:absolute (not contributing to the wrapper's
+ * height) until the exact moment the old one is removed, and both style
+ * changes happen in the same synchronous call with no layout-affecting step
+ * in between -- so there's no intermediate frame where the wrapper is either
+ * doubled in height or briefly collapsed to zero.
+ *
+ * This still discards the previous document's scroll position, focus, and
+ * any expanded "Show more" state on every successful poll -- swapping in a
+ * whole new document, just without the visible flash, doesn't change that;
+ * an accepted cost of a background content refresh, not fixed here.
  *
  * @return string
  */
@@ -220,8 +248,62 @@ function feedland_rivers_poll_listener_script(): string {
 		// rest_route value instead of starting a real query string, so
 		// server/username/category would never reach the REST callback.
 		. 'var sep=restUrl.indexOf("?")===-1?"?":"&";'
+		. 'var FADE_MS=150,READY_TIMEOUT_MS=4000;'
+		// Removing the old iframe and un-absolutely-positioning the new one
+		// happen back to back with no other DOM/layout read in between, so the
+		// browser paints only the end state -- never a frame with both in flow
+		// (double height) or neither (collapsed wrapper).
+		. 'function promote(cur,next){'
+		. 'var curId=cur.id;'
+		. 'if(cur.parentNode)cur.parentNode.removeChild(cur);'
+		. 'next.style.position="";next.style.top="";next.style.left="";next.style.transition="";next.style.pointerEvents="";'
+		. 'next.id=curId;'
+		. 'next.setAttribute("data-feedland-live","1");'
+		. '}'
+		. 'function crossfade(cur,next){'
+		. 'next.style.transition="opacity "+FADE_MS+"ms";'
+		. 'cur.style.transition="opacity "+FADE_MS+"ms";'
+		. 'next.style.opacity="1";'
+		. 'cur.style.opacity="0";'
+		. 'cur.style.pointerEvents="none";'
+		. 'setTimeout(function(){promote(cur,next);},FADE_MS);'
+		. '}'
+		. 'function swap(cur,json){'
+		. 'var wrap=cur.parentNode;'
+		. 'var next=document.createElement("iframe");'
+		. 'next.className="feedlandRiversIframe";'
+		. 'next.title=cur.title;'
+		. 'next.setAttribute("sandbox",cur.getAttribute("sandbox"));'
+		// Same starting height as the visible iframe (falling back to the
+		// shortcode's own 600px default) so the hidden document renders at a
+		// realistic width/viewport, not the zero-height it'd otherwise start
+		// from -- ResizeObserver inside it needs a real box to measure against.
+		. 'next.style.cssText="width:100%;height:"+(cur.style.height||"600px")+";border:0;display:block;position:absolute;top:0;left:0;opacity:0;pointer-events:none;";'
+		. 'next.dataset.feedlandServer=cur.dataset.feedlandServer||"";'
+		. 'next.dataset.feedlandUsername=cur.dataset.feedlandUsername||"";'
+		. 'next.dataset.feedlandCategory=cur.dataset.feedlandCategory||"";'
+		. 'next.dataset.feedlandHash=json.hash;'
+		. 'next.srcdoc=json.srcdoc;'
+		. 'var settled=false;'
+		. 'function onReady(e){'
+		. 'if(settled||!e.data||typeof e.data.feedlandRiversHeight!=="number"||e.source!==next.contentWindow)return;'
+		. 'settled=true;'
+		. 'window.removeEventListener("message",onReady);'
+		. 'crossfade(cur,next);'
+		. '}'
+		. 'window.addEventListener("message",onReady);'
+		. 'setTimeout(function(){'
+		. 'if(settled)return;'
+		. 'settled=true;'
+		. 'window.removeEventListener("message",onReady);'
+		. 'crossfade(cur,next);'
+		. '},READY_TIMEOUT_MS);'
+		. 'wrap.appendChild(next);'
+		. '}'
 		. 'function poll(){'
-		. 'document.querySelectorAll(".feedlandRiversIframe[data-feedland-hash]").forEach(function(f){'
+		. 'document.querySelectorAll(".feedlandRiversWrap").forEach(function(wrap){'
+		. 'var f=wrap.querySelector(".feedlandRiversIframe[data-feedland-live]");'
+		. 'if(!f)return;'
 		. 'var p=new URLSearchParams();'
 		. 'p.set("server",f.dataset.feedlandServer||"");'
 		. 'p.set("username",f.dataset.feedlandUsername||"");'
@@ -230,8 +312,7 @@ function feedland_rivers_poll_listener_script(): string {
 		. 'var t=ctrl?setTimeout(function(){ctrl.abort();},8000):null;'
 		. 'fetch(restUrl+sep+p.toString(),ctrl?{signal:ctrl.signal}:{}).then(function(r){if(t)clearTimeout(t);return r.ok?r.json():null;}).then(function(json){'
 		. 'if(!json||!json.hash||json.hash===f.dataset.feedlandHash||!f.isConnected)return;'
-		. 'f.srcdoc=json.srcdoc;'
-		. 'f.dataset.feedlandHash=json.hash;'
+		. 'swap(f,json);'
 		. '}).catch(function(){});'
 		. '});'
 		. '}'
