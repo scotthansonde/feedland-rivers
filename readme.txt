@@ -4,7 +4,7 @@ Tags: feedland, rss, river, news, feeds
 Requires at least: 6.1
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,12 @@ Yes. Point the Template URL setting at your own HTML template, which is fetched 
 Check that the username is correct at **Settings > FeedLand Rivers**, and that the account is subscribed to at least one feed — FeedLand only polls feeds that have active subscribers.
 
 == Changelog ==
+
+= 0.4.0 =
+* The river now also listens for FeedLand's live-update notifications over a WebSocket connection and polls immediately when a subscribed feed changes, instead of always waiting for the next timed check. Disable with `add_filter( 'feedland_rivers_live_updates_enabled', '__return_false' );`.
+* The watched feed set comes from FeedLand's own OPML subscription list, not just the feeds currently visible in the displayed window, so a quiet feed's next post still triggers a refresh.
+* The WebSocket address is discovered from the configured server's own homepage once a day, since a self-hosted instance can run it on a completely different host than its REST API; falls back to a same-host guess if that fails.
+* Added the `feedland_rivers_feed_list_cache_ttl`, `feedland_rivers_feed_list_error_cache_ttl`, `feedland_rivers_live_updates_enabled`, `feedland_rivers_live_updates_socket_url`, `feedland_rivers_socket_discovery_cache_ttl` and `feedland_rivers_socket_discovery_error_cache_ttl` filters.
 
 = 0.3.0 =
 * The river now checks for fresh content every few minutes and updates itself in place, so a page left open picks up new items without a full reload. Updates fade in rather than causing the flash a full document swap would otherwise show. Disable with `add_filter( 'feedland_rivers_poll_interval', '__return_zero' );`.
