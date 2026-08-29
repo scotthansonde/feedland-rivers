@@ -24,7 +24,7 @@ There is no automated test suite (no PHPUnit, no `tests/` directory). Verify cha
 ```bash
 git archive --format=zip --prefix=feedland-rivers/ HEAD \
   -o feedland-rivers-X.Y.Z.zip \
-  -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github' ':!CLAUDE.md'
+  -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github' ':!CLAUDE.md' ':!docker-compose.yml'
 ```
 
 The plugin header `Version:` (`feedland-rivers.php`) and `Stable tag:` (`readme.txt`) must be bumped together — nothing enforces this automatically.
@@ -35,7 +35,7 @@ When checking a release with the WordPress Plugin Check plugin, download the `fe
 
 Because output renders inside a sandboxed `<iframe srcdoc="...">`, the page's raw HTML source is one extra layer of attribute-encoding removed from what actually gets parsed — inspecting it directly is misleading. To see the real rendered document, extract the `srcdoc` attribute value and run it through `html_entity_decode()`.
 
-A disposable Docker WordPress install (matching the plugin's "Tested up to" version) is the fastest way to reproduce and verify behavior against real WordPress core functions (`wp_kses()`, `esc_attr()`, etc.) rather than guessing: `wordpress:latest` + `mysql:8.0` + `wordpress:cli` via docker-compose, plugin directory bind-mounted into `wp-content/plugins/feedland-rivers`, `wp option update feedland_rivers_options --format=json` to configure it, `wp post create --post_content='[feedland-rivers]'` for a test page, then `curl` the page and decode the `srcdoc` attribute as above. This caught a real bug (see "The srcdoc double-encoding gotcha" below) that a synthetic PHP harness alone missed.
+A disposable Docker WordPress install (matching the plugin's "Tested up to" version) is the fastest way to reproduce and verify behavior against real WordPress core functions (`wp_kses()`, `esc_attr()`, etc.) rather than guessing: `docker-compose.yml` in this repo root brings up `wordpress:latest` + `mariadb:10.11` + `wordpress:cli`, bind-mounting this directory itself into `wp-content/plugins/feedland-rivers`. Run `docker compose up -d`, then use `docker compose exec wpcli wp ...` — e.g. `wp option update feedland_rivers_options --format=json` to configure it, `wp post create --post_content='[feedland-rivers]'` for a test page — then `curl localhost:8080/?page_id=...` and decode the `srcdoc` attribute as above. This caught a real bug (see "The srcdoc double-encoding gotcha" below) that a synthetic PHP harness alone missed. `docker-compose.yml` is dev-only and excluded from the release zip, same as `composer.json`.
 
 ## Architecture
 

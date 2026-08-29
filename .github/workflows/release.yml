@@ -20,7 +20,7 @@ jobs:
         run: |
           git archive --format=zip --prefix=feedland-rivers/ HEAD \
             -o "feedland-rivers-${VERSION}.zip" \
-            -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github' ':!CLAUDE.md'
+            -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github' ':!CLAUDE.md' ':!docker-compose.yml'
 
       - name: Create release
         uses: softprops/action-gh-release@v2
