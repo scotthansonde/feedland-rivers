@@ -29,4 +29,4 @@ jobs:
           body: |
             Download `feedland-rivers-${{ env.VERSION }}.zip` below — this is the installable plugin package.
 
-            The "Source code (zip)" and "Source code (tar.gz)" links further down are GitHub's raw repo checkout, not the plugin package: wrong root folder name, and includes dev-only files (composer.json, CLAUDE.md, etc.) that don't belong in a WordPress install and will produce spurious Plugin Check errors.
+            The "Source code (zip)" and "Source code (tar.gz)" are GitHub's raw repo checkout and include dev-only files not needed to run the plugin.
