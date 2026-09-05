@@ -18,15 +18,15 @@ jobs:
 
       - name: Build plugin zip
         run: |
-          git archive --format=zip --prefix=feedland-rivers/ HEAD \
-            -o "feedland-rivers-${VERSION}.zip" \
+          git archive --format=zip --prefix=river-embed-for-feedland/ HEAD \
+            -o "river-embed-for-feedland-${VERSION}.zip" \
             -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github' ':!CLAUDE.md' ':!docker-compose.yml'
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          files: feedland-rivers-${{ env.VERSION }}.zip
+          files: river-embed-for-feedland-${{ env.VERSION }}.zip
           body: |
-            Download `feedland-rivers-${{ env.VERSION }}.zip` below — this is the installable plugin package.
+            Download `river-embed-for-feedland-${{ env.VERSION }}.zip` below — this is the installable plugin package.
 
             The "Source code (zip)" and "Source code (tar.gz)" are GitHub's raw repo checkout and include dev-only files not needed to run the plugin.

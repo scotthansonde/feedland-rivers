@@ -7,7 +7,7 @@
  * of each feed URL and template URL), so there is no way to enumerate them
  * after the settings are gone.
  *
- * @package feedland-rivers
+ * @package river-embed-for-feedland
  */
 
 // Only ever run as WordPress's uninstall handler.

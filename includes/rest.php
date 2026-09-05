@@ -4,7 +4,7 @@
  * and fetch fresh river content, letting an already-rendered iframe update
  * in place without a full page reload.
  *
- * @package feedland-rivers
+ * @package river-embed-for-feedland
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,7 +15,7 @@ add_action( 'rest_api_init', 'feedland_rivers_register_rest_routes' );
 
 /**
  * Registers the public, read-only endpoint the parent page's poll script
- * (feedland_rivers_poll_listener_script()) calls to check for and fetch
+ * (feedland_rivers_poll_listener_js()) calls to check for and fetch
  * fresh river content. Deliberately open to anonymous requests, same as the
  * river itself already is via the shortcode -- but unlike the shortcode,
  * server/username/category arrive here as plain request params anyone could
@@ -96,7 +96,7 @@ function feedland_rivers_rest_get_river( WP_REST_Request $request ) {
 	if ( ! hash_equals( feedland_rivers_river_token( $resolved['server'], $resolved['username'], $resolved['category'] ), (string) $request->get_param( 'token' ) ) ) {
 		return new WP_Error(
 			'feedland_rivers_invalid_token',
-			__( 'This river was not rendered by this site.', 'feedland-rivers' ),
+			__( 'This river was not rendered by this site.', 'river-embed-for-feedland' ),
 			array( 'status' => 403 )
 		);
 	}
@@ -106,14 +106,14 @@ function feedland_rivers_rest_get_river( WP_REST_Request $request ) {
 	if ( false === $srcdoc ) {
 		return new WP_Error(
 			'feedland_rivers_river_unavailable',
-			__( 'Unable to load the river right now.', 'feedland-rivers' ),
+			__( 'Unable to load the river right now.', 'river-embed-for-feedland' ),
 			array( 'status' => 502 )
 		);
 	}
 
 	// Refreshed on every poll, same as $srcdoc -- the client carries it onto
 	// the replacement iframe's dataset (see swap() in
-	// feedland_rivers_poll_listener_script()) so the WebSocket filter keeps
+	// feedland_rivers_poll_listener_js()) so the WebSocket filter keeps
 	// watching the right feed set as it drifts. A failed fetch here doesn't
 	// fail the whole poll -- an empty list just means the WebSocket trigger
 	// sits idle until the next successful poll re-populates it; the interval

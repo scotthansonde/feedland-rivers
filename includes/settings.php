@@ -5,14 +5,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Add menu item and page for the FeedLand Rivers settings
+ * Add menu item and page for the River Embed for FeedLand settings
  *
  * @return void
  */
 function feedland_rivers_add_admin_menu(): void {
 	add_options_page(
-		__( 'FeedLand Rivers Settings', 'feedland-rivers' ),
-		__( 'FeedLand Rivers', 'feedland-rivers' ),
+		__( 'River Embed for FeedLand Settings', 'river-embed-for-feedland' ),
+		__( 'River Embed', 'river-embed-for-feedland' ),
 		'manage_options',
 		'feedland_rivers_settings',
 		'feedland_rivers_settings_page'
@@ -55,14 +55,14 @@ function feedland_rivers_settings_init(): void {
 
 	add_settings_section(
 		'feedland_rivers_settings_section',
-		__( 'FeedLand Rivers Settings', 'feedland-rivers' ),
+		__( 'River Embed for FeedLand Settings', 'river-embed-for-feedland' ),
 		'feedland_rivers_settings_section_callback',
 		'feedland_rivers_settings'
 	);
 
 	add_settings_field(
 		'feedland_rivers_title',
-		__( 'Title', 'feedland-rivers' ),
+		__( 'Title', 'river-embed-for-feedland' ),
 		'feedland_rivers_settings_field_callback',
 		'feedland_rivers_settings',
 		'feedland_rivers_settings_section',
@@ -71,7 +71,7 @@ function feedland_rivers_settings_init(): void {
 			'type'        => 'text',
 			'name'        => 'feedland_rivers_title',
 			'class'       => 'regular-text',
-			'description' => esc_html__( 'The heading shown above the river. Leave blank for no heading.', 'feedland-rivers' ),
+			'description' => esc_html__( 'The heading shown above the river. Leave blank for no heading.', 'river-embed-for-feedland' ),
 			// phpcs:ignore Squiz.PHP.CommentedOutCode.Found -- documentation, not code.
 			// Rendered inside the template via [%pageTitle%] (the built-in template shows it), not as a separate element outside the iframe.
 		)
@@ -79,7 +79,7 @@ function feedland_rivers_settings_init(): void {
 
 	add_settings_field(
 		'feedland_rivers_username',
-		__( 'FeedLand username', 'feedland-rivers' ),
+		__( 'FeedLand username', 'river-embed-for-feedland' ),
 		'feedland_rivers_settings_field_callback',
 		'feedland_rivers_settings',
 		'feedland_rivers_settings_section',
@@ -88,13 +88,13 @@ function feedland_rivers_settings_init(): void {
 			'type'        => 'text',
 			'name'        => 'feedland_rivers_username',
 			'class'       => 'regular-text',
-			'description' => esc_html__( 'The username of the FeedLand account whose river you want shown. (Required)', 'feedland-rivers' ),
+			'description' => esc_html__( 'The username of the FeedLand account whose river you want shown. (Required)', 'river-embed-for-feedland' ),
 		)
 	);
 
 	add_settings_field(
 		'feedland_rivers_server',
-		__( 'FeedLand server', 'feedland-rivers' ),
+		__( 'FeedLand server', 'river-embed-for-feedland' ),
 		'feedland_rivers_settings_field_callback',
 		'feedland_rivers_settings',
 		'feedland_rivers_settings_section',
@@ -104,13 +104,13 @@ function feedland_rivers_settings_init(): void {
 			'name'        => 'feedland_rivers_server',
 			'class'       => 'regular-text',
 			'placeholder' => FEEDLAND_RIVERS_DEFAULT_SERVER,
-			'description' => esc_html__( 'The server that account is on. (Defaults to feedland.com, required)', 'feedland-rivers' ),
+			'description' => esc_html__( 'The server that account is on. (Defaults to feedland.com, required)', 'river-embed-for-feedland' ),
 		)
 	);
 
 	add_settings_field(
 		'feedland_rivers_category',
-		__( 'Category (optional)', 'feedland-rivers' ),
+		__( 'Category (optional)', 'river-embed-for-feedland' ),
 		'feedland_rivers_settings_field_callback',
 		'feedland_rivers_settings',
 		'feedland_rivers_settings_section',
@@ -119,13 +119,13 @@ function feedland_rivers_settings_init(): void {
 			'type'        => 'text',
 			'name'        => 'feedland_rivers_category',
 			'class'       => 'regular-text',
-			'description' => esc_html__( 'Show news only from feeds in this category. Leave blank to show news from everything the user subscribes to.', 'feedland-rivers' ),
+			'description' => esc_html__( 'Show news only from feeds in this category. Leave blank to show news from everything the user subscribes to.', 'river-embed-for-feedland' ),
 		)
 	);
 
 	add_settings_field(
 		'feedland_rivers_description',
-		__( 'Description (optional)', 'feedland-rivers' ),
+		__( 'Description (optional)', 'river-embed-for-feedland' ),
 		'feedland_rivers_settings_field_callback',
 		'feedland_rivers_settings',
 		'feedland_rivers_settings_section',
@@ -134,13 +134,13 @@ function feedland_rivers_settings_init(): void {
 			'type'        => 'text',
 			'name'        => 'feedland_rivers_description',
 			'class'       => 'regular-text',
-			'description' => esc_html__( 'Used if your template shows a description (the built-in template does not).', 'feedland-rivers' ),
+			'description' => esc_html__( 'Used if your template shows a description (the built-in template does not).', 'river-embed-for-feedland' ),
 		)
 	);
 
 	add_settings_field(
 		'feedland_rivers_image',
-		__( 'Image URL (optional)', 'feedland-rivers' ),
+		__( 'Image URL (optional)', 'river-embed-for-feedland' ),
 		'feedland_rivers_settings_field_callback',
 		'feedland_rivers_settings',
 		'feedland_rivers_settings_section',
@@ -149,13 +149,13 @@ function feedland_rivers_settings_init(): void {
 			'type'        => 'url',
 			'name'        => 'feedland_rivers_image',
 			'class'       => 'regular-text',
-			'description' => esc_html__( 'Used if your template shows an image (the built-in template does not).', 'feedland-rivers' ),
+			'description' => esc_html__( 'Used if your template shows an image (the built-in template does not).', 'river-embed-for-feedland' ),
 		)
 	);
 
 	add_settings_field(
 		'feedland_rivers_template_url',
-		__( 'Template URL (optional)', 'feedland-rivers' ),
+		__( 'Template URL (optional)', 'river-embed-for-feedland' ),
 		'feedland_rivers_settings_field_callback',
 		'feedland_rivers_settings',
 		'feedland_rivers_settings_section',
@@ -164,7 +164,7 @@ function feedland_rivers_settings_init(): void {
 			'type'        => 'url',
 			'name'        => 'feedland_rivers_template_url',
 			'class'       => 'regular-text',
-			'description' => esc_html__( 'The HTML template used for the river page, fetched and filled in the same way FeedLand fills in its own News Product templates. Leave blank to use the built-in template.', 'feedland-rivers' ),
+			'description' => esc_html__( 'The HTML template used for the river page, fetched and filled in the same way FeedLand fills in its own News Product templates. Leave blank to use the built-in template.', 'river-embed-for-feedland' ),
 		)
 	);
 }
@@ -175,7 +175,7 @@ function feedland_rivers_settings_init(): void {
  * @return void
  */
 function feedland_rivers_settings_section_callback(): void {
-	echo '<p>' . esc_html__( 'Customize the FeedLand Rivers settings.', 'feedland-rivers' ) . '</p>';
+	echo '<p>' . esc_html__( 'Customize the River Embed for FeedLand settings.', 'river-embed-for-feedland' ) . '</p>';
 }
 
 /**
@@ -303,7 +303,7 @@ function feedland_rivers_validate_options( $input ): array {
 			add_settings_error(
 				$group,
 				'feedland_rivers_server',
-				esc_html__( 'The FeedLand server URL is not valid — it must be an http:// or https:// address.', 'feedland-rivers' )
+				esc_html__( 'The FeedLand server URL is not valid — it must be an http:// or https:// address.', 'river-embed-for-feedland' )
 			);
 			$server = $keep( 'feedland_rivers_server', FEEDLAND_RIVERS_DEFAULT_SERVER );
 		}
@@ -318,7 +318,7 @@ function feedland_rivers_validate_options( $input ): array {
 		add_settings_error(
 			$group,
 			'feedland_rivers_username',
-			esc_html__( 'The username cannot be empty.', 'feedland-rivers' )
+			esc_html__( 'The username cannot be empty.', 'river-embed-for-feedland' )
 		);
 		$username = $keep( 'feedland_rivers_username', FEEDLAND_RIVERS_DEFAULT_USERNAME );
 	}
@@ -347,7 +347,7 @@ function feedland_rivers_validate_options( $input ): array {
 			add_settings_error(
 				$group,
 				'feedland_rivers_server',
-				esc_html__( 'Could not reach the FeedLand server to verify the username, so it was saved as entered.', 'feedland-rivers' ),
+				esc_html__( 'Could not reach the FeedLand server to verify the username, so it was saved as entered.', 'river-embed-for-feedland' ),
 				'warning'
 			);
 		} else {
@@ -357,14 +357,14 @@ function feedland_rivers_validate_options( $input ): array {
 				add_settings_error(
 					$group,
 					'feedland_rivers_server',
-					esc_html__( 'The FeedLand server did not return a usable response when verifying the username, so it was saved as entered.', 'feedland-rivers' ),
+					esc_html__( 'The FeedLand server did not return a usable response when verifying the username, so it was saved as entered.', 'river-embed-for-feedland' ),
 					'warning'
 				);
 			} elseif ( empty( $response['flInDatabase'] ) ) {
 				add_settings_error(
 					$group,
 					'feedland_rivers_username',
-					esc_html__( 'The username provided is not associated with a FeedLand account.', 'feedland-rivers' )
+					esc_html__( 'The username provided is not associated with a FeedLand account.', 'river-embed-for-feedland' )
 				);
 				$input['feedland_rivers_username'] = $keep( 'feedland_rivers_username', FEEDLAND_RIVERS_DEFAULT_USERNAME );
 			}
@@ -392,7 +392,7 @@ function feedland_rivers_validate_options( $input ): array {
 			add_settings_error(
 				$group,
 				'feedland_rivers_category',
-				esc_html__( 'Could not reach the FeedLand server to verify the category, so it was saved as entered.', 'feedland-rivers' ),
+				esc_html__( 'Could not reach the FeedLand server to verify the category, so it was saved as entered.', 'river-embed-for-feedland' ),
 				'warning'
 			);
 		} else {
@@ -403,7 +403,7 @@ function feedland_rivers_validate_options( $input ): array {
 				add_settings_error(
 					$group,
 					'feedland_rivers_category',
-					esc_html__( 'That category was not found for this user.', 'feedland-rivers' )
+					esc_html__( 'That category was not found for this user.', 'river-embed-for-feedland' )
 				);
 				$category = $keep( 'feedland_rivers_category', FEEDLAND_RIVERS_DEFAULT_CATEGORY );
 			}
@@ -418,8 +418,8 @@ function feedland_rivers_validate_options( $input ): array {
 
 	// Image URL and template URL. Both optional; blank clears them.
 	foreach ( array(
-		'feedland_rivers_image'        => esc_html__( 'The image URL is not valid — it must be an http:// or https:// address.', 'feedland-rivers' ),
-		'feedland_rivers_template_url' => esc_html__( 'The template URL is not valid — it must be an http:// or https:// address.', 'feedland-rivers' ),
+		'feedland_rivers_image'        => esc_html__( 'The image URL is not valid — it must be an http:// or https:// address.', 'river-embed-for-feedland' ),
+		'feedland_rivers_template_url' => esc_html__( 'The template URL is not valid — it must be an http:// or https:// address.', 'river-embed-for-feedland' ),
 	) as $key => $message ) {
 		$clean = feedland_rivers_clean_url( $submitted( $key ) );
 

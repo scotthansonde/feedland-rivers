@@ -1,5 +1,5 @@
 {
-	"name": "feedland/feedland-rivers",
+	"name": "scotthansonde/river-embed-for-feedland",
 	"description": "Show a FeedLand river on your WordPress site.",
 	"type": "wordpress-plugin",
 	"license": "GPL-2.0-or-later",

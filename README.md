@@ -1,4 +1,4 @@
-# FeedLand Rivers for WordPress
+# River Embed for FeedLand
 
 ## What is this?
 
@@ -9,7 +9,7 @@ FeedLand also has its own [News Product](https://docs.feedland.com/newsproducts.
 ## How to Use
 
 1. Install and activate the plugin.
-2. Adjust the plugin settings at **Settings > FeedLand Rivers**: enter your FeedLand username and, optionally, a category to limit the river to feeds in that category (leave it blank to show everything the user subscribes to). Description, Image URL, and Template URL are optional — see "Customizing the template" below.
+2. Adjust the plugin settings at **Settings > River Embed**: enter your FeedLand username and, optionally, a category to limit the river to feeds in that category (leave it blank to show everything the user subscribes to). Description, Image URL, and Template URL are optional — see "Customizing the template" below.
 3. Add the `[feedland-rivers]` shortcode anywhere on your site to display the river.
 
 ### Adding the Shortcode
@@ -31,7 +31,7 @@ The `username`, `category` and `server` attributes override the corresponding se
 [feedland-rivers username="alice" category="tech"]
 [feedland-rivers username="bob" server="https://myfeedland.example.com/"]
 ```
-A bare `[feedland-rivers]` still uses the username/category/server configured at **Settings > FeedLand Rivers**.
+A bare `[feedland-rivers]` still uses the username/category/server configured at **Settings > River Embed**.
 
 ## How it works
 
@@ -49,7 +49,7 @@ This gives real two-way CSS/JS isolation from the WordPress theme (a genuine ifr
 
 FeedLand itself builds its News Product pages by fetching an HTML template from a configured URL and filling in `[%token%]` placeholders (confirmed directly from FeedLand's own templates, e.g. `http://scripting.com/code/riverclient/index.html` — the lean "just a river page" variant of its News Product page, as opposed to the full FeedLand app shell). This plugin works the same way:
 
-- **Template URL** (Settings > FeedLand Rivers) — an HTML template fetched and filled in the same way. Leave it blank to use the plugin's built-in template (`assets/default-template.html`), modeled on FeedLand's own riverclient template but without its ~25-script dependency chain. Point it at your own hosted template, or at FeedLand's own riverclient URL if you want that exact look, to override it.
+- **Template URL** (Settings > River Embed) — an HTML template fetched and filled in the same way. Leave it blank to use the plugin's built-in template (`assets/default-template.html`), modeled on FeedLand's own riverclient template but without its ~25-script dependency chain. Point it at your own hosted template, or at FeedLand's own riverclient URL if you want that exact look, to override it.
 - Available tokens: `[%pageTitle%]`, `[%pageDescription%]`, `[%pageImage%]` — filled from the Title/Description/Image URL settings. The built-in template doesn't display Description/Image (so leaving them blank changes nothing); they're there for compatibility with templates that do.
 - Whatever template is used must contain an element with `id="idRiverContent"` — the plugin injects the rendered river content right after that element's opening tag, the same mount-point convention FeedLand's own templates use (their client-side JS fills that div in after the page loads; this plugin fills it in server-side, since it renders items in PHP rather than loading FeedLand's front-end scripts).
 - The plugin also injects a small resize-reporting script before `</body>` regardless of which template is in use, since a template not built for this plugin won't already have it.

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A WordPress plugin (`feedland-rivers`) that displays a FeedLand river — a stream of news items from feeds a FeedLand user subscribes to — on a WordPress page via the `[feedland-rivers]` shortcode. Pure PHP, no build step, no JavaScript tooling. Targets PHP 7.4+, WordPress 6.1+ (tested up to 7.1).
+A WordPress plugin (`river-embed-for-feedland`) that displays a FeedLand river — a stream of news items from feeds a FeedLand user subscribes to — on a WordPress page via the `[feedland-rivers]` shortcode. Pure PHP, no build step, no JavaScript tooling. Targets PHP 7.4+, WordPress 6.1+ (tested up to 7.1).
 
 ## Commands
 
@@ -19,31 +19,31 @@ There is no automated test suite (no PHPUnit, no `tests/` directory). Verify cha
 
 ### Packaging a release
 
-`.github/workflows/release.yml` builds a distributable zip named `feedland-rivers-X.Y.Z.zip` (version from the pushed tag) via `git archive`, attaches it to the GitHub Release, and sets a release body note pointing at that asset — because GitHub also auto-attaches its own unrelated "Source code (zip/tar.gz)" archives to every release, and those contain the raw repo checkout (wrong root folder name, dev-only files included) rather than the installable plugin package. To build the zip locally:
+`.github/workflows/release.yml` builds a distributable zip named `river-embed-for-feedland-X.Y.Z.zip` (version from the pushed tag) via `git archive`, attaches it to the GitHub Release, and sets a release body note pointing at that asset — because GitHub also auto-attaches its own unrelated "Source code (zip/tar.gz)" archives to every release, and those contain the raw repo checkout (wrong root folder name, dev-only files included) rather than the installable plugin package. To build the zip locally:
 
 ```bash
-git archive --format=zip --prefix=feedland-rivers/ HEAD \
-  -o feedland-rivers-X.Y.Z.zip \
+git archive --format=zip --prefix=river-embed-for-feedland/ HEAD \
+  -o river-embed-for-feedland-X.Y.Z.zip \
   -- . ':!composer.json' ':!composer.lock' ':!.phpcs.xml.dist' ':!README.md' ':!.gitignore' ':!.github' ':!CLAUDE.md' ':!docker-compose.yml'
 ```
 
-The plugin header `Version:` (`feedland-rivers.php`) and `Stable tag:` (`readme.txt`) must be bumped together — nothing enforces this automatically.
+The plugin header `Version:`, the `FEEDLAND_RIVERS_VERSION` constant (both `river-embed-for-feedland.php`), and `Stable tag:` (`readme.txt`) must be bumped together — nothing enforces this automatically.
 
-When checking a release with the WordPress Plugin Check plugin, download the `feedland-rivers.zip` release *asset* specifically. GitHub also auto-attaches a "Source code (zip)" archive to every release, containing the entire unfiltered repo (`.git`-tracked dotfiles, `CLAUDE.md`, composer files, everything) under a version-suffixed folder name (`feedland-rivers-0.2.1/` rather than `feedland-rivers/`) — checking that one instead produces a wall of spurious `TextDomainMismatch` errors (it infers the expected text domain from the folder name) plus `hidden_files`/`application_detected`/`github_directory` warnings for files the real release zip never ships.
+When checking a release with the WordPress Plugin Check plugin, download the `river-embed-for-feedland.zip` release *asset* specifically. GitHub also auto-attaches a "Source code (zip)" archive to every release, containing the entire unfiltered repo (`.git`-tracked dotfiles, `CLAUDE.md`, composer files, everything) under a version-suffixed folder name (`river-embed-for-feedland-0.2.1/` rather than `river-embed-for-feedland/`) — checking that one instead produces a wall of spurious `TextDomainMismatch` errors (it infers the expected text domain from the folder name) plus `hidden_files`/`application_detected`/`github_directory` warnings for files the real release zip never ships.
 
 ### Manual verification
 
 Because output renders inside a sandboxed `<iframe srcdoc="...">`, the page's raw HTML source is one extra layer of attribute-encoding removed from what actually gets parsed — inspecting it directly is misleading. To see the real rendered document, extract the `srcdoc` attribute value and run it through `html_entity_decode()`.
 
-A disposable Docker WordPress install (matching the plugin's "Tested up to" version) is the fastest way to reproduce and verify behavior against real WordPress core functions (`wp_kses()`, `esc_attr()`, etc.) rather than guessing: `docker-compose.yml` in this repo root brings up `wordpress:latest` + `mariadb:10.11` + `wordpress:cli`, bind-mounting this directory itself into `wp-content/plugins/feedland-rivers`. Run `docker compose up -d`, then use `docker compose exec wpcli wp ...` — e.g. `wp option update feedland_rivers_options --format=json` to configure it, `wp post create --post_content='[feedland-rivers]'` for a test page — then `curl localhost:8080/?page_id=...` and decode the `srcdoc` attribute as above. This caught a real bug (see "The srcdoc double-encoding gotcha" below) that a synthetic PHP harness alone missed. `docker-compose.yml` is dev-only and excluded from the release zip, same as `composer.json`.
+A disposable Docker WordPress install (matching the plugin's "Tested up to" version) is the fastest way to reproduce and verify behavior against real WordPress core functions (`wp_kses()`, `esc_attr()`, etc.) rather than guessing: `docker-compose.yml` in this repo root brings up `wordpress:latest` + `mariadb:10.11` + `wordpress:cli`, bind-mounting this directory itself into `wp-content/plugins/river-embed-for-feedland`. Run `docker compose up -d`, then use `docker compose exec wpcli wp ...` — e.g. `wp option update feedland_rivers_options --format=json` to configure it, `wp post create --post_content='[feedland-rivers]'` for a test page — then `curl localhost:8080/?page_id=...` and decode the `srcdoc` attribute as above. This caught a real bug (see "The srcdoc double-encoding gotcha" below) that a synthetic PHP harness alone missed. `docker-compose.yml` is dev-only and excluded from the release zip, same as `composer.json`.
 
 ## Architecture
 
 Three PHP files, tied together by one trust boundary: **feed content is untrusted** (arbitrary third-party RSS, aggregated by FeedLand) and must only ever reach output through this plugin's own fixed, escaped code paths — never through the admin-supplied/fetched template, and never through a less-obvious channel like attribute double-encoding.
 
-- **`feedland-rivers.php`** — bootstrap: constants (`FEEDLAND_RIVERS_DEFAULT_*`, `FEEDLAND_RIVERS_MAX_ITEMS`, `FEEDLAND_RIVERS_CACHE_TTL`/`ERROR_CACHE_TTL`), hook registration, and `feedland_rivers_shortcode()` — the shortcode callback and main entry point. Resolves `server`/`username`/`category` from shortcode attributes first, falling back to the Settings page option for each (so a site can embed several different rivers via multiple shortcode instances, while a bare `[feedland-rivers]` uses the configured default). Calls into `render.php` to fetch/cache the river JSON and render the full HTML document, then wraps it in a sandboxed iframe.
+- **`river-embed-for-feedland.php`** — bootstrap: constants (`FEEDLAND_RIVERS_DEFAULT_*`, `FEEDLAND_RIVERS_MAX_ITEMS`, `FEEDLAND_RIVERS_CACHE_TTL`/`ERROR_CACHE_TTL`), hook registration, and `feedland_rivers_shortcode()` — the shortcode callback and main entry point. Resolves `server`/`username`/`category` from shortcode attributes first, falling back to the Settings page option for each (so a site can embed several different rivers via multiple shortcode instances, while a bare `[feedland-rivers]` uses the configured default). Calls into `render.php` to fetch/cache the river JSON and render the full HTML document, then wraps it in a sandboxed iframe.
 
-- **`includes/settings.php`** — registers the Settings > FeedLand Rivers admin page and validates/sanitizes on save (`feedland_rivers_validate_options()`), including live pings to FeedLand's `isuserindatabase`/`getriverfromcategory` endpoints to verify username/category. Two principles apply consistently: malformed input is rejected and falls back to the previously-saved value (never the plugin default, so a typo can't wipe a working config); input that merely couldn't be *verified* (e.g. FeedLand unreachable) is kept as entered, with a warning. `feedland_rivers_clean_url()` is a shared URL-validation helper used both here and by the shortcode's `server` attribute override.
+- **`includes/settings.php`** — registers the Settings > River Embed admin page and validates/sanitizes on save (`feedland_rivers_validate_options()`), including live pings to FeedLand's `isuserindatabase`/`getriverfromcategory` endpoints to verify username/category. Two principles apply consistently: malformed input is rejected and falls back to the previously-saved value (never the plugin default, so a typo can't wipe a working config); input that merely couldn't be *verified* (e.g. FeedLand unreachable) is kept as entered, with a warning. `feedland_rivers_clean_url()` is a shared URL-validation helper used both here and by the shortcode's `server` attribute override.
 
 - **`includes/render.php`** — the bulk of the logic:
   - `feedland_rivers_get_river()` fetches FeedLand's `getriver`/`getriverfromcategory` JSON API server-side, cached in a WP transient keyed on `server|username|category|max_items` (`FEEDLAND_RIVERS_CACHE_TTL`, 3 min default). Failures are cached too, for a shorter TTL, as a sentinel array (since `get_transient()` can't distinguish "not cached" from "cached the value false").

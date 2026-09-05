@@ -1,10 +1,10 @@
-=== FeedLand Rivers ===
+=== River Embed for FeedLand ===
 Contributors: scotthansonde
 Tags: feedland, rss, river, news, feeds
 Requires at least: 6.1
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,14 +45,14 @@ Add the river anywhere with the `[feedland-rivers]` shortcode.
 == Installation ==
 
 1. Install and activate the plugin.
-2. Go to **Settings > FeedLand Rivers** and enter the FeedLand username whose river you want to show. Optionally limit it to one category.
+2. Go to **Settings > River Embed** and enter the FeedLand username whose river you want to show. Optionally limit it to one category.
 3. Add the `[feedland-rivers]` shortcode to a page, post or widget.
 
 == Frequently Asked Questions ==
 
 = Can I show more than one river? =
 
-Yes. The `username`, `category` and `server` shortcode attributes override the corresponding setting, e.g. `[feedland-rivers username="alice" category="tech"]`. A bare `[feedland-rivers]` uses the username/category/server configured at **Settings > FeedLand Rivers**.
+Yes. The `username`, `category` and `server` shortcode attributes override the corresponding setting, e.g. `[feedland-rivers username="alice" category="tech"]`. A bare `[feedland-rivers]` uses the username/category/server configured at **Settings > River Embed**.
 
 = Why is the river in an iframe? =
 
@@ -64,9 +64,15 @@ Yes. Point the Template URL setting at your own HTML template, which is fetched 
 
 = Nothing shows up. =
 
-Check that the username is correct at **Settings > FeedLand Rivers**, and that the account is subscribed to at least one feed — FeedLand only polls feeds that have active subscribers.
+Check that the username is correct at **Settings > River Embed**, and that the account is subscribed to at least one feed — FeedLand only polls feeds that have active subscribers.
 
 == Changelog ==
+
+= 0.4.1 =
+* Renamed the plugin from "FeedLand Rivers" to "River Embed for FeedLand", so the name doesn't read as an official FeedLand product.
+* The resize/poll listener scripts are now registered with `wp_enqueue_script()`/`wp_add_inline_script()` instead of printed as raw `<script>` tags.
+* Removed the now-unnecessary `load_plugin_textdomain()` call — WordPress.org has auto-loaded hosted plugins' translations since 4.6.
+* Activating this plugin alongside an old "FeedLand Rivers" install (e.g. mid-migration) no longer causes a fatal error; an admin notice now explains that only one can run at a time.
 
 = 0.4.0 =
 * The river now also listens for FeedLand's live-update notifications over a WebSocket connection and polls immediately when a subscribed feed changes, instead of always waiting for the next timed check. Disable with `add_filter( 'feedland_rivers_live_updates_enabled', '__return_false' );`.

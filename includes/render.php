@@ -209,7 +209,7 @@ function feedland_rivers_get_river( string $server, string $username, string $ca
  * Deliberately separate from feedland_rivers_get_river(): that returns only
  * the feeds represented in the currently-cached top $max_items window, which
  * is too narrow for the WebSocket live-update filter in
- * feedland_rivers_poll_listener_script() -- a feed that hasn't posted
+ * feedland_rivers_poll_listener_js() -- a feed that hasn't posted
  * recently enough to be in that window still needs to be watched, so a new
  * item from it can trigger an immediate poll instead of only ever matching
  * feeds already on screen.
@@ -886,10 +886,10 @@ function feedland_rivers_render_item( array $item, string $server ): string {
 		<?php endif; ?>
 		<?php if ( $description ) : ?><div class="river-item-body river-item-body-clamped"><?php echo $description; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-sanitized by feedland_rivers_sanitize_description(). ?></div><?php endif; ?>
 		<div class="river-item-footer">
-			<?php echo feedland_rivers_render_footer_icon( 'spShareButton', 'share', '', '', __( "Sharing isn't available here.", 'feedland-rivers' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from esc_attr()/esc_url() above. ?>
-			<?php echo feedland_rivers_render_footer_icon( 'spDocButton', 'doc', $doc_url, __( 'View this item on its own page.', 'feedland-rivers' ), __( 'No link available for this item.', 'feedland-rivers' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-			<?php echo feedland_rivers_render_footer_icon( 'spDataButton', 'data', '', '', __( "Technical data view isn't available here.", 'feedland-rivers' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-			<?php echo feedland_rivers_render_footer_icon( 'spEnclosureButton', 'enclosure', $enclosure_url, __( 'Listen to or view the enclosure.', 'feedland-rivers' ), __( 'No enclosure attached to this item.', 'feedland-rivers' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			<?php echo feedland_rivers_render_footer_icon( 'spShareButton', 'share', '', '', __( "Sharing isn't available here.", 'river-embed-for-feedland' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from esc_attr()/esc_url() above. ?>
+			<?php echo feedland_rivers_render_footer_icon( 'spDocButton', 'doc', $doc_url, __( 'View this item on its own page.', 'river-embed-for-feedland' ), __( 'No link available for this item.', 'river-embed-for-feedland' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			<?php echo feedland_rivers_render_footer_icon( 'spDataButton', 'data', '', '', __( "Technical data view isn't available here.", 'river-embed-for-feedland' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			<?php echo feedland_rivers_render_footer_icon( 'spEnclosureButton', 'enclosure', $enclosure_url, __( 'Listen to or view the enclosure.', 'river-embed-for-feedland' ), __( 'No enclosure attached to this item.', 'river-embed-for-feedland' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			<?php if ( $when ) : ?><span class="river-item-when"><?php echo esc_html( $when ); ?></span><?php endif; ?>
 		</div>
 	</div>
@@ -923,7 +923,7 @@ function feedland_rivers_format_section_date( int $timestamp ): string {
 
 	if ( $is_today ) {
 		/* translators: %s: time, e.g. "3:33 pm" */
-		return sprintf( __( 'Today, %s', 'feedland-rivers' ), wp_date( 'g:i A', $timestamp ) );
+		return sprintf( __( 'Today, %s', 'river-embed-for-feedland' ), wp_date( 'g:i A', $timestamp ) );
 	}
 
 	return wp_date( 'M j, g:i A', $timestamp );
@@ -1152,11 +1152,11 @@ function feedland_rivers_expand_body_script(): string {
 		. 'btn.className = "river-item-more";'
 		. 'btn.setAttribute("aria-controls", id);'
 		. 'btn.setAttribute("aria-expanded", "false");'
-		. 'btn.textContent = ' . wp_json_encode( __( 'Show more', 'feedland-rivers' ) ) . ';'
+		. 'btn.textContent = ' . wp_json_encode( __( 'Show more', 'river-embed-for-feedland' ) ) . ';'
 		. 'function toggle() {'
 		. 'var open = body.classList.toggle("river-item-body-clamped") === false;'
 		. 'btn.setAttribute("aria-expanded", open ? "true" : "false");'
-		. 'btn.textContent = open ? ' . wp_json_encode( __( 'Show less', 'feedland-rivers' ) ) . ' : ' . wp_json_encode( __( 'Show more', 'feedland-rivers' ) ) . ';'
+		. 'btn.textContent = open ? ' . wp_json_encode( __( 'Show less', 'river-embed-for-feedland' ) ) . ' : ' . wp_json_encode( __( 'Show more', 'river-embed-for-feedland' ) ) . ';'
 		. '}'
 		. 'btn.addEventListener("click", toggle);'
 		. 'body.addEventListener("click", function (e) {'
@@ -1202,7 +1202,7 @@ function feedland_rivers_render_iframe_document( array $river, string $server, a
 	}
 
 	if ( '' === $sections_html ) {
-		$sections_html = '<p class="river-empty">' . esc_html__( 'No news items to show yet.', 'feedland-rivers' ) . '</p>';
+		$sections_html = '<p class="river-empty">' . esc_html__( 'No news items to show yet.', 'river-embed-for-feedland' ) . '</p>';
 	}
 
 	$template = feedland_rivers_get_template( trim( $options['feedland_rivers_template_url'] ?? '' ) );
