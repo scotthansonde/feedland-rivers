@@ -3,9 +3,8 @@
  * Plugin Name:       River Embed for FeedLand
  * Description:       Show a FeedLand river on your site.
  * Requires at least: 6.1
- * Tested up to:      7.1
  * Requires PHP:      7.4
- * Version:           0.4.1
+ * Version:           0.4.2
  * Author:            Scott Hanson
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -22,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! defined( 'FEEDLAND_RIVERS_PATH' ) ) {
 
 	define( 'FEEDLAND_RIVERS_PATH', plugin_dir_path( __FILE__ ) );
-	define( 'FEEDLAND_RIVERS_VERSION', '0.4.1' );
+	define( 'FEEDLAND_RIVERS_VERSION', '0.4.2' );
 
 	define( 'FEEDLAND_RIVERS_DEFAULT_SERVER', 'https://feedland.com/' );
 	define( 'FEEDLAND_RIVERS_DEFAULT_USERNAME', '' );

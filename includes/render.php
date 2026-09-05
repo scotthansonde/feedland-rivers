@@ -613,6 +613,12 @@ function feedland_rivers_maybe_serve_font(): void {
  * Builds the @font-face block for the bundled Ubuntu files, for templates
  * carrying the [%fontFaceCss%] token.
  *
+ * Returned as a literal <style> tag because this is substituted into the
+ * standalone HTML document that becomes the iframe's `srcdoc` (see
+ * feedland_rivers_render_iframe_document()), not printed into the current
+ * WP page -- wp_enqueue_style() has no hook into an iframe srcdoc string
+ * assembled server-side.
+ *
  * @return string
  */
 function feedland_rivers_font_face_css(): string {
@@ -1086,6 +1092,14 @@ function feedland_rivers_apply_template( string $template, array $tokens ): stri
  * regardless of which template is in use (ours or an admin-configured one),
  * since an arbitrary fetched template won't already have it.
  *
+ * Returned as a literal <script> tag because this is substituted into the
+ * standalone HTML document that becomes the iframe's `srcdoc` (see
+ * feedland_rivers_render_iframe_document()), not printed into the current
+ * WP page -- unlike feedland_rivers_enqueue_listener_script() in
+ * river-embed-for-feedland.php, which registers the *parent* page's own
+ * listener the normal wp_enqueue_script() way, this has no such page to
+ * enqueue into.
+ *
  * @return string
  */
 function feedland_rivers_resize_script(): string {
@@ -1127,6 +1141,11 @@ function feedland_rivers_resize_script(): string {
  *
  * Expanding changes document.body's height, which the resize script's
  * ResizeObserver already reports, so the iframe grows on its own.
+ *
+ * Returned as a literal <script> tag for the same reason as
+ * feedland_rivers_resize_script() above: this is substituted into the
+ * iframe's own `srcdoc` sub-document, not printed into the current WP page,
+ * so wp_enqueue_script() has no hook into it here.
  *
  * @return string
  */

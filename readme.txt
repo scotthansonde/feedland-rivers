@@ -4,7 +4,7 @@ Tags: feedland, rss, river, news, feeds
 Requires at least: 6.1
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.1
+Stable tag: 0.4.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,7 @@ Add the river anywhere with the `[feedland-rivers]` shortcode.
 
 * Your configured FeedLand server, server-side only, for the river JSON and feed titles.
 * Your configured Template URL, if you set one, server-side only — fetched once and cached, to build the page shell. Leave it blank to use the plugin's built-in template instead.
-* DuckDuckGo's icon service, from the visitor's browser, for each feed's favicon. This can be turned off:
+* DuckDuckGo's icon service, from the visitor's browser, for each feed's favicon — sends only the feed's own homepage URL, on every page view, no cookies or personal data. [Privacy Policy](https://duckduckgo.com/privacy) / [Terms of Service](https://duckduckgo.com/terms). This can be turned off:
 
 `add_filter( 'feedland_rivers_favicon_url', '__return_empty_string' );`
 
@@ -67,6 +67,10 @@ Yes. Point the Template URL setting at your own HTML template, which is fetched 
 Check that the username is correct at **Settings > River Embed**, and that the account is subscribed to at least one feed — FeedLand only polls feeds that have active subscribers.
 
 == Changelog ==
+
+= 0.4.2 =
+* Removed the duplicate `Tested up to` plugin header — the readme's is the only one WordPress.org reads.
+* Documented DuckDuckGo's Privacy Policy and Terms of Service links for its icon service.
 
 = 0.4.1 =
 * Renamed the plugin from "FeedLand Rivers" to "River Embed for FeedLand", so the name doesn't read as an official FeedLand product.
